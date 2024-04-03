@@ -34,7 +34,7 @@ export default function Profile() {
     let alchemy;
     try{
         const settings = {
-            apiKey: "WUlCbz8-Yg6a5QJIQe-Cg88VlDr01zPW",
+            apiKey: "",
             network: Network.ETH_SEPOLIA,
         }; 
     alchemy = new Alchemy(settings);
