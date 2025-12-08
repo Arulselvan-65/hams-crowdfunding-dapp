@@ -1,5 +1,6 @@
 import hardhatToolboxMochaEthersPlugin from "@nomicfoundation/hardhat-toolbox-mocha-ethers";
 import { configVariable, defineConfig } from "hardhat/config";
+import "dotenv/config";
 
 export default defineConfig({
   plugins: [hardhatToolboxMochaEthersPlugin],
@@ -23,19 +24,16 @@ export default defineConfig({
     },
   },
   networks: {
-    hardhatMainnet: {
-      type: "edr-simulated",
+    hardhat: {
+      type: "http",
+      url: "http://127.0.0.1:8545/",
       chainType: "l1",
     },
-    hardhatOp: {
-      type: "edr-simulated",
-      chainType: "op",
-    },
-    sepolia: {
+    polygon_amoy: {
       type: "http",
       chainType: "l1",
-      url: configVariable("SEPOLIA_RPC_URL"),
-      accounts: [configVariable("SEPOLIA_PRIVATE_KEY")],
+      url: configVariable("POLYGON_AMOY_RPC_URL"),
+      accounts: [configVariable("POLYGON_AMOY_PRIVATE_KEY")],
     },
   },
 });

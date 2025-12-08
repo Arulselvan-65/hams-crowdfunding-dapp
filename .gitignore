@@ -1,8 +1,9 @@
 # Node modules
 /node_modules
 
-/.idea
-.idea
+.idea/
+
+/.env
 
 # Compilation output
 /dist

@@ -9,25 +9,28 @@ contract RewardNFT is ERC721, IRewardNFT {
     using Strings for uint8;
 
     uint256 public nextTokenId;
-    address public immutable fundNFT;
+    address public fundNFT;
 
     mapping(uint256 => string) public campaignBaseURI;
     mapping(uint256 => uint256) public tokenCampaignId;
     mapping(uint256 => uint8) public tokenTier;
 
     error NotAllowed();
-    error CampaignNotConfigured();
     error InvalidTier();
+    error InvalidAddress();
+    error CampaignNotConfigured();
 
-    constructor(address _fundNFT) ERC721("FundNFT Supporter Badge", "FUNDNFT") {
-        fundNFT = _fundNFT;
-    }
+    constructor() ERC721("FundNFT Supporter Badge", "FUNDNFT") {}
 
     modifier onlyFundNFT {
         if (msg.sender != fundNFT) revert NotAllowed();
         _;
     }
 
+    function setFundNFT(address _fundNFT) external  {
+        require(_fundNFT != address(0), InvalidAddress());
+        fundNFT = _fundNFT;
+    }
     function mintTo(address to, uint256 campaignId, uint8 tier) external returns (uint256 tokenId) {
         require(tier < 3, InvalidTier());
         require(bytes(campaignBaseURI[campaignId]).length > 0, CampaignNotConfigured());
