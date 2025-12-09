@@ -13,11 +13,7 @@ contract FundNFT is IFundNFT {
     uint256 public platformFeeBps;
     IRewardNFT public immutable rewardNFT;
 
-    uint256 public constant BRONZE = 0;
-    uint256 public constant SILVER = 1;
-    uint256 public constant GOLD = 2;
-
-    uint256 public constant MIN_AMOUNTS[3] = [
+    uint256[3] public constant MIN_AMOUNTS = [
         0.01 ether,
         0.1 ether,
         0.5 ether
@@ -38,7 +34,6 @@ contract FundNFT is IFundNFT {
         bool claimed;
         bool finalized;
         string metadataURI;
-        TierConfig[3] tiers;
     }
 
     mapping(uint256 => Campaign) public campaigns;
@@ -75,31 +70,23 @@ contract FundNFT is IFundNFT {
             goal: _goal,
             startAt: _startAt,
             endAt: _endAt,
-            metadataURI: _uri,
-            tiers: [
-                TierConfig({ cap: _tierCaps[0], pledged: 0, minAmount: MIN_AMOUNTS[0] }),
-                TierConfig({ cap: _tierCaps[1], pledged: 0, minAmount: MIN_AMOUNTS[1] }),
-                TierConfig({ cap: _tierCaps[2], pledged: 0, minAmount: MIN_AMOUNTS[2] })
-            ]
+            metadataURI: _uri
         });
 
         return campaignId;
     }
 
     function pledge(uint256 campaignId, uint256 amount) external payable {
-        Campaign storage c = campaigns[campaignId];
-
-        require(block.timestamp >= c.startAt, CampaignNotActive());
-        require(block.timestamp <= c.endAt, CampaignEnded());
+        require(campaignId < nextCampaignId, CampaignNotActive());
+        require((block.timestamp >= c.startAt && block.timestamp <= c.endAt), CampaignNotActive());
         require(!c.finalized, CampaignEnded());
         require(msg.value > 0, InvalidAmount());
 
+        Campaign storage c = campaigns[campaignId];
         uint256 totalPledged = c.pledged + msg.value;
         uint256 userTotal = pledges[campaignId][msg.sender] + msg.value;
 
-        if (totalPledged > c.goal) revert GoalReached();
-
-        uint8 newTier = _getTier(newUserTotal);
+        uint8 newTier = _getTier(userTotal);
         if (newTier == 255) revert InvalidAmount();
 
         // 4. Per-tier cap check
@@ -135,7 +122,8 @@ contract FundNFT is IFundNFT {
 
     }
 
-
-
+    function _getTier(uint256 amount) private view returns(uint256 tier)  {
+        tier = (0.01 <= amount <= 0.099) ? 1 : (0.10 <= amount <= 0.049) ? 2 : (amount >= 0.50) ? 3 : 255;
+    }
 
 }
