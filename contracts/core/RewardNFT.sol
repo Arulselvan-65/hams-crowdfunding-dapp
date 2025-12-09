@@ -2,10 +2,11 @@
 pragma solidity ^0.8.26;
 
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import {ERC721Burnable} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import {IRewardNFT} from "../interfaces/IRewardNFT.sol";
 
-contract RewardNFT is ERC721, IRewardNFT {
+contract RewardNFT is ERC721, IRewardNFT, ERC721Burnable {
     using Strings for uint8;
 
     uint256 public nextTokenId;
@@ -27,11 +28,11 @@ contract RewardNFT is ERC721, IRewardNFT {
         _;
     }
 
-    function setFundNFT(address _fundNFT) external  {
+    function setFundNFT(address _fundNFT) external {
         require(_fundNFT != address(0), InvalidAddress());
         fundNFT = _fundNFT;
     }
-    function mintTo(address to, uint256 campaignId, uint8 tier) external returns (uint256 tokenId) {
+    function mintTo(address to, uint256 campaignId, uint8 tier) external onlyFundNFT returns(uint256 tokenId) {
         require(tier < 3, InvalidTier());
         require(bytes(campaignBaseURI[campaignId]).length > 0, CampaignNotConfigured());
 
@@ -42,7 +43,7 @@ contract RewardNFT is ERC721, IRewardNFT {
         _safeMint(to, tokenId);
     }
 
-    function setBaseURI(uint256 campaignId, string calldata baseURI) external {
+    function setBaseURI(uint256 campaignId, string calldata baseURI) external onlyFundNFT {
         campaignBaseURI[campaignId] = baseURI;
     }
 
@@ -53,6 +54,11 @@ contract RewardNFT is ERC721, IRewardNFT {
         string memory base = campaignBaseURI[campId];
 
         return string(abi.encodePacked(base, (tokenTier[tokenId]).toString(), ".json"));
+    }
+
+    function burn(uint256 tokenId) public override onlyFundNFT {
+        require(msg.sender == fundNFT, NotAllowed());
+        super._burn(tokenId);
     }
 
     function getTokenInfo(uint256 tokenId) external view returns (uint256 campaignId, uint8 tier) {
