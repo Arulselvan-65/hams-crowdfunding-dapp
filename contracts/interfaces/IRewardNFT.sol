@@ -9,6 +9,6 @@ interface IRewardNFT {
 
     function getTokenInfo(uint256 tokenId) external view returns (uint256 campaignId, uint8 tier);
 
-    function burn(uint256 tokenId) public override;
+    function burn(uint256 tokenId) external;
 
     }

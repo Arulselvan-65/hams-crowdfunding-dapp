@@ -32,6 +32,7 @@ contract RewardNFT is ERC721, IRewardNFT, ERC721Burnable {
         require(_fundNFT != address(0), InvalidAddress());
         fundNFT = _fundNFT;
     }
+
     function mintTo(address to, uint256 campaignId, uint8 tier) external onlyFundNFT returns(uint256 tokenId) {
         require(tier < 3, InvalidTier());
         require(bytes(campaignBaseURI[campaignId]).length > 0, CampaignNotConfigured());
@@ -56,7 +57,7 @@ contract RewardNFT is ERC721, IRewardNFT, ERC721Burnable {
         return string(abi.encodePacked(base, (tokenTier[tokenId]).toString(), ".json"));
     }
 
-    function burn(uint256 tokenId) public override onlyFundNFT {
+    function burn(uint256 tokenId) public override(ERC721Burnable, IRewardNFT) onlyFundNFT {
         require(msg.sender == fundNFT, NotAllowed());
         super._burn(tokenId);
     }

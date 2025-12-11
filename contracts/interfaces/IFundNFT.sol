@@ -10,9 +10,9 @@ interface IFundNFT {
         string calldata _uri
     ) external returns(uint256 campaignId);
 
-    function pledge(uint256 campaignId, uint256 amount) external payable;
+    function pledge(uint256 campaignId) external payable;
 
-    function finalize() external;
+  /*  function finalize() external;
 
     function claim() external;
 
@@ -32,5 +32,5 @@ interface IFundNFT {
         string memory metadataFolderCID,
         bool success
     );
-
+*/
 }

@@ -13,12 +13,6 @@ contract FundNFT is IFundNFT {
     uint256 public platformFeeBps;
     IRewardNFT public immutable rewardNFT;
 
-    struct TierConfig {
-        uint256 cap;
-        uint256 pledged;
-        uint256 minAmount;
-    }
-
     struct Campaign {
         address creator;
         uint256 goal;
@@ -65,13 +59,16 @@ contract FundNFT is IFundNFT {
             goal: _goal,
             startAt: _startAt,
             endAt: _endAt,
-            metadataURI: _uri
+            metadataURI: _uri,
+            pledged: 0,
+            finalized: false,
+            claimed: false
         });
         rewardNFT.setBaseURI(campaignId, _uri);
         return campaignId;
     }
 
-    function pledge(uint256 campaignId, uint256 amount) external payable {
+    function pledge(uint256 campaignId) external payable {
         require(campaignId < nextCampaignId, CampaignNotActive());
 
         Campaign storage c = campaigns[campaignId];
@@ -96,8 +93,17 @@ contract FundNFT is IFundNFT {
 //        emit Pledged(campaignId, msg.sender, msg.value, newTier);
     }
 
-    function _getTier(uint256 amount) private view returns(uint256 tier)  {
-        tier = (0.01 <= amount <= 0.099) ? 0 : (0.10 <= amount <= 0.049) ? 1 : (amount >= 0.50) ? 2 : 255;
+    function _getTier(uint256 amount) private pure returns(uint8 tier)  {
+        if (amount >= 0.50 ether) {
+            return 2;
+        }
+        if (amount >= 0.10 ether) {
+            return 1;
+        }
+        if (amount >= 0.01 ether) {
+            return 0;
+        }
+        return 255;
     }
 
 }
