@@ -9,7 +9,7 @@ contract FundNFT is IFundNFT {
 
     uint256 public nextCampaignId;
     address public immutable owner;
-    uint256 public platformFeeTo;
+    address public platformFeeTo;
     uint256 public platformFeeBps;
     IRewardNFT public immutable rewardNFT;
 
@@ -39,8 +39,16 @@ contract FundNFT is IFundNFT {
     error NotCreator();
     error TransferFailed();
     error NoPledge();
+    error GoalNotReached();
     error AlreadyClaimed();
     error CampaignStillActive();
+    error CampaignAlreadyFinalized();
+
+    event CampaignCreated(uint256 indexed id, address creator);
+    event CampaignFinalized(uint256 indexed id,bool status);
+    event Pledged(uint256 indexed id, address indexed sender, uint256 value, uint8 tier);
+    event FundsClaimed(uint256 indexed id, uint256 pledged,uint256 fee,uint256 creatorAmount);
+
 
     constructor(address _rewardNFT){
         owner = msg.sender;
@@ -65,42 +73,82 @@ contract FundNFT is IFundNFT {
             claimed: false
         });
         rewardNFT.setBaseURI(campaignId, _uri);
+        emit CampaignCreated(campaignId, msg.sender);
         return campaignId;
     }
 
-    function pledge(uint256 campaignId) external payable {
-        require(campaignId < nextCampaignId, CampaignNotActive());
+    function pledge(uint256 id) external payable {
+        require(id < nextCampaignId, CampaignNotActive());
 
-        Campaign storage c = campaigns[campaignId];
+        Campaign storage c = campaigns[id];
         require((block.timestamp >= c.startAt && block.timestamp <= c.endAt), CampaignNotActive());
         require(!c.finalized, CampaignEnded());
         require(msg.value > 0, InvalidAmount());
 
-        uint256 userTotal = pledges[campaignId][msg.sender] + msg.value;
+        uint256 userTotal = pledges[id][msg.sender] + msg.value;
 
         uint8 newTier = _getTier(userTotal);
         if (newTier == 255) revert InvalidAmount();
 
-        uint256 oldTokenId = supporterToken[campaignId][msg.sender];
+        uint256 oldTokenId = supporterToken[id][msg.sender];
         if (oldTokenId != 0) {
             rewardNFT.burn(oldTokenId);
         }
 
         c.pledged += msg.value;
-        pledges[campaignId][msg.sender] =userTotal;
-        uint256 newTokenId = rewardNFT.mintTo(msg.sender, campaignId, newTier);
-        supporterToken[campaignId][msg.sender] = newTokenId;
-//        emit Pledged(campaignId, msg.sender, msg.value, newTier);
+        pledges[id][msg.sender] =userTotal;
+        uint256 newTokenId = rewardNFT.mintTo(msg.sender, id, newTier);
+        supporterToken[id][msg.sender] = newTokenId;
+        emit Pledged(id, msg.sender, msg.value, newTier);
+    }
+
+    function finalize(uint256 id) external {
+        Campaign storage c = campaigns[id];
+        require(block.timestamp > c.endAt, CampaignStillActive());
+        require(!c.finalized, CampaignAlreadyFinalized());
+        c.finalized = true;
+        emit CampaignFinalized(id, c.pledged >= c.goal);
+    }
+
+    function claim(uint256 id) external {
+        Campaign storage c = campaigns[id];
+        require(c.creator == msg.sender, NotCreator());
+        require(c.finalized, CampaignStillActive());
+        require(c.pledged >= c.goal, GoalNotReached());
+        require(!c.claimed, AlreadyClaimed());
+
+        c.claimed = true;
+        uint256 fee = (c.pledged * platformFeeBps) / 10_000;
+        uint256 creatorAmount = c.pledged - fee;
+
+        (bool sentFee,) = platformFeeTo.call{value: fee}("");
+        (bool sentCreator,) = msg.sender.call{value: creatorAmount}("");
+        require(sentFee && sentCreator, TransferFailed());
+
+        emit FundsClaimed(id, c.pledged, fee, creatorAmount);
+    }
+
+    function refund(uint256 id) external {
+        uint256 amount = pledges[id][msg.sender];
+        require(amount > 0, NoPledge());
+
+        Campaign storage c = campaigns[id];
+        require(c.finalized, CampaignStillActive());
+        require(c.pledged < c.goal, GoalReached());
+
+        pledges[id][msg.sender] = 0;
+        (bool s, ) = msg.sender.call{value: amount}("");
+        require(s, TransferFailed());
     }
 
     function _getTier(uint256 amount) private pure returns(uint8 tier)  {
         if (amount >= 0.50 ether) {
             return 2;
         }
-        if (amount >= 0.10 ether) {
+        else if (amount >= 0.10 ether) {
             return 1;
         }
-        if (amount >= 0.01 ether) {
+        else if (amount >= 0.01 ether) {
             return 0;
         }
         return 255;

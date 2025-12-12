@@ -10,15 +10,15 @@ interface IFundNFT {
         string calldata _uri
     ) external returns(uint256 campaignId);
 
-    function pledge(uint256 campaignId) external payable;
+    function pledge(uint256 id) external payable;
 
-  /*  function finalize() external;
+    function finalize(uint256 id) external;
 
-    function claim() external;
+    function claim(uint256 id) external;
 
-    function refund() external;
+    function refund(uint256 id) external;
 
-    function getCampaign(uint256 campaignId)
+  /*  function getCampaign(uint256 campaignId)
     external
     view
     returns(
