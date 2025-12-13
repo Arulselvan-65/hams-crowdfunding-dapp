@@ -3,9 +3,9 @@ pragma solidity ^0.8.10;
 
 import { IRewardNFT } from "../interfaces/IRewardNFT.sol";
 import { IFundNFT } from "../interfaces/IFundNFT.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-
-contract FundNFT is IFundNFT {
+contract FundNFT is IFundNFT, ReentrancyGuard {
 
     uint256 public nextCampaignId;
     address public immutable owner;
@@ -43,6 +43,7 @@ contract FundNFT is IFundNFT {
     error AlreadyClaimed();
     error CampaignStillActive();
     error CampaignAlreadyFinalized();
+    error InvalidRange();
 
     event CampaignCreated(uint256 indexed id, address creator);
     event CampaignFinalized(uint256 indexed id,bool status);
@@ -77,7 +78,7 @@ contract FundNFT is IFundNFT {
         return campaignId;
     }
 
-    function pledge(uint256 id) external payable {
+    function pledge(uint256 id) external payable nonReentrant {
         require(id < nextCampaignId, CampaignNotActive());
 
         Campaign storage c = campaigns[id];
@@ -110,7 +111,7 @@ contract FundNFT is IFundNFT {
         emit CampaignFinalized(id, c.pledged >= c.goal);
     }
 
-    function claim(uint256 id) external {
+    function claim(uint256 id) external nonReentrant {
         Campaign storage c = campaigns[id];
         require(c.creator == msg.sender, NotCreator());
         require(c.finalized, CampaignStillActive());
@@ -128,7 +129,7 @@ contract FundNFT is IFundNFT {
         emit FundsClaimed(id, c.pledged, fee, creatorAmount);
     }
 
-    function refund(uint256 id) external {
+    function refund(uint256 id) external nonReentrant {
         uint256 amount = pledges[id][msg.sender];
         require(amount > 0, NoPledge());
 
@@ -139,6 +140,21 @@ contract FundNFT is IFundNFT {
         pledges[id][msg.sender] = 0;
         (bool s, ) = msg.sender.call{value: amount}("");
         require(s, TransferFailed());
+    }
+
+    function getCampaign(uint256 campaignId) external view 
+    returns(address, uint256, uint256, uint256, uint256, bool, bool, string memory, bool) {
+        Campaign memory c = campaigns[campaignId];
+        return (c.creator, c.goal, c.pledged, c.startAt, c.endAt, c.claimed, c.finalized, c.metadataURI, c.pledged >= c.goal);
+    }
+
+    function getCampaigns(uint256 startIndex, uint256 endIndex) external view returns(Campaign[] memory) {
+        require(startIndex < endIndex, InvalidRange());
+        Campaign[] memory all = new Campaign[](nextCampaignId);
+        for(uint256 i = startIndex; i < endIndex; i++) {
+            all[i] = campaigns[i];
+        }
+        return all;
     }
 
     function _getTier(uint256 amount) private pure returns(uint8 tier)  {

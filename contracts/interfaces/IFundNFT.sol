@@ -18,7 +18,7 @@ interface IFundNFT {
 
     function refund(uint256 id) external;
 
-  /*  function getCampaign(uint256 campaignId)
+    function getCampaign(uint256 campaignId)
     external
     view
     returns(
@@ -32,5 +32,4 @@ interface IFundNFT {
         string memory metadataFolderCID,
         bool success
     );
-*/
 }
