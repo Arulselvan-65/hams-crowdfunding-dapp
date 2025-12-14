@@ -23,6 +23,15 @@ describe("FundNFT", function () {
         });
     });
 
+    describe("Campaign Creation", function () {
+        it("Should create new Campaign", async function () {
+            await rewardNFT.setFundNFT(fundNFT.getAddress());
+            await fundNFT.createCampaign(100, 1765733400, 1765796580,"https://api.ipfs.jsgfh/sdhgfjfydgfddhf");
+            expect(await fundNFT.nextCampaignId()).to.equal(1);
+            expect(await fundNFT.getCampaign(0)).not.equal(null);
+        })
+    })
+
     
 
 });
