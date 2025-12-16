@@ -180,6 +180,10 @@ contract FundNFT is IFundNFT, ReentrancyGuard {
         return all;
     }
 
+    function getTokenInfo(uint256 campaignId, address addr) external view returns(uint256 tokenId) {
+        return supporterToken[campaignId][addr];
+    }
+
     function _getTier(uint256 amount) private pure returns(uint8 tier)  {
         if (amount >= 0.50 ether) {
             return 2;
