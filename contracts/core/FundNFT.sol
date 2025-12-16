@@ -97,7 +97,7 @@ contract FundNFT is IFundNFT, ReentrancyGuard {
         }
 
         c.pledged += msg.value;
-        pledges[id][msg.sender] =userTotal;
+        pledges[id][msg.sender] = userTotal;
         uint256 newTokenId = rewardNFT.mintTo(msg.sender, id, newTier);
         supporterToken[id][msg.sender] = newTokenId;
         emit Pledged(id, msg.sender, msg.value, newTier);
@@ -142,10 +142,33 @@ contract FundNFT is IFundNFT, ReentrancyGuard {
         require(s, TransferFailed());
     }
 
-    function getCampaign(uint256 campaignId) external view 
-    returns(address, uint256, uint256, uint256, uint256, bool, bool, string memory, bool) {
+    function getCampaign(uint256 campaignId)
+    external
+    view
+    returns (
+        address creator,
+        uint256 goal,
+        uint256 pledged,
+        uint256 startAt,
+        uint256 endAt,
+        bool claimed,
+        bool finalized,
+        string memory metadataURI,
+        bool goalReached
+    ) {
         Campaign memory c = campaigns[campaignId];
-        return (c.creator, c.goal, c.pledged, c.startAt, c.endAt, c.claimed, c.finalized, c.metadataURI, c.pledged >= c.goal);
+
+        return (
+            c.creator,
+            c.goal,
+            c.pledged,
+            c.startAt,
+            c.endAt,
+            c.claimed,
+            c.finalized,
+            c.metadataURI,
+            c.pledged >= c.goal
+        );
     }
 
     function getCampaigns(uint256 startIndex, uint256 endIndex) external view returns(Campaign[] memory) {
