@@ -6,11 +6,11 @@ const { ethers } = await network.connect();
 describe("FundNFT", function () {
     let fundNFT: any;
     let rewardNFT: any;
-    let owner: any, addr1: any, addr2: any;
+    let owner: any, addr1: any, addr2: any, addr3: any;
     let startAt: bigint, endAt: bigint;
 
     beforeEach(async function () {
-        [owner, addr1, addr2] = await ethers.getSigners();
+        [owner, addr1, addr2, addr3] = await ethers.getSigners();
         rewardNFT = await ethers.deployContract("RewardNFT");
         await rewardNFT.waitForDeployment();  
         fundNFT = await ethers.deployContract("FundNFT", [rewardNFT.getAddress()]);
@@ -36,6 +36,12 @@ describe("FundNFT", function () {
             await fundNFT.createCampaign(100, startAt, endAt, "https://api.ipfs.jsgfh/sdhgfjfydgfddhf");
             expect(await fundNFT.nextCampaignId()).to.equal(1);
             expect(await fundNFT.getCampaign(0)).not.equal(null);
+        });
+
+        it("Should set the campaign creator to msg.sender (the caller of createCampaign)", async function () {
+            await rewardNFT.setFundNFT(fundNFT.getAddress());
+            await fundNFT.createCampaign(100, startAt, endAt, "https://api.ipfs.jsgfh/sdhgfjfydgfddhf");
+            expect((await fundNFT.getCampaign(0)).creator).to.equal(await owner.getAddress());
         });
 
         it("Should revert with InvalidGoal() when goal is 0", async function () {
@@ -93,10 +99,36 @@ describe("FundNFT", function () {
             await fundNFT.pledge(0, {
                 value: ethers.parseEther("80")
             });
+
             const res = await fundNFT.getCampaign(0);
+
             expect(res.goalReached).to.equal(false);
         });
+
+        it("Should revert with InvalidRange() when startIndex >= endIndex", async function () {
+            await rewardNFT.setFundNFT(fundNFT.getAddress());
+            await fundNFT.createCampaign(ethers.parseEther("100"), startAt, endAt, "https://api.ipfs.jsgfh/sdhgfjfydgfddhf");
+            await fundNFT.connect(addr1).createCampaign(ethers.parseEther("100"), startAt, endAt, "https://api.ipfs.jsgfh/sdhgfjfydgfddhf");
+            await fundNFT.connect(addr2).createCampaign(ethers.parseEther("100"), startAt, endAt, "https://api.ipfs.jsgfh/sdhgfjfydgfddhf");
+            expect(fundNFT.getCampaigns(10, 1)).to.revertedWithCustomError(fundNFT, "InvalidRange");
+        });
+
+        it("Should return the correct campaigns in the specified range when startIndex < endIndex", async function () {
+            await rewardNFT.setFundNFT(fundNFT.getAddress());
+            await fundNFT.createCampaign(ethers.parseEther("100"), startAt, endAt, "https://api.ipfs.jsgfh/sdhgfjfydgfddhf");
+            await fundNFT.connect(addr1).createCampaign(ethers.parseEther("100"), startAt, endAt, "https://api.ipfs.jsgfh/sdhgfjfydgfddhf");
+            await fundNFT.connect(addr2).createCampaign(ethers.parseEther("100"), startAt, endAt, "https://api.ipfs.jsgfh/sdhgfjfydgkfcbuid");
+            await fundNFT.connect(addr3).createCampaign(ethers.parseEther("100"), startAt, endAt, "https://api.ipfs.jsgfh/sdhgfjfydgfddhf");
+
+            const res = await fundNFT.getCampaigns(0, 2);
+
+            expect(res[0].creator).to.equal(await owner.getAddress());
+            expect(res[1].creator).to.equal(await addr1.getAddress());
+            expect(res[2].creator).to.equal(await addr2.getAddress());
+        });
     });
+
+
 
 
 

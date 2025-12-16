@@ -174,7 +174,7 @@ contract FundNFT is IFundNFT, ReentrancyGuard {
     function getCampaigns(uint256 startIndex, uint256 endIndex) external view returns(Campaign[] memory) {
         require(startIndex < endIndex, InvalidRange());
         Campaign[] memory all = new Campaign[](nextCampaignId);
-        for(uint256 i = startIndex; i < endIndex; i++) {
+        for(uint256 i = startIndex; i <= endIndex; i++) {
             all[i] = campaigns[i];
         }
         return all;
