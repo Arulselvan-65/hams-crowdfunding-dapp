@@ -50,7 +50,6 @@ contract FundNFT is IFundNFT, ReentrancyGuard {
     event Pledged(uint256 indexed id, address indexed sender, uint256 value, uint8 tier);
     event FundsClaimed(uint256 indexed id, uint256 pledged,uint256 fee,uint256 creatorAmount);
 
-
     constructor(address _rewardNFT){
         owner = msg.sender;
         rewardNFT = IRewardNFT(_rewardNFT);
@@ -101,6 +100,11 @@ contract FundNFT is IFundNFT, ReentrancyGuard {
         uint256 newTokenId = rewardNFT.mintTo(msg.sender, id, newTier);
         supporterToken[id][msg.sender] = newTokenId;
         emit Pledged(id, msg.sender, msg.value, newTier);
+    }
+
+    function setPlatformFeeInfo(address to, uint256 bps) external {
+        platformFeeTo = to;
+        platformFeeBps = bps;
     }
 
     function finalize(uint256 id) external {
