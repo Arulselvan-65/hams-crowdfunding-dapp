@@ -49,8 +49,10 @@ contract FundNFT is IFundNFT, ReentrancyGuard {
     event CampaignFinalized(uint256 indexed id,bool status);
     event Pledged(uint256 indexed id, address indexed sender, uint256 value, uint8 tier);
     event FundsClaimed(uint256 indexed id, uint256 pledged,uint256 fee,uint256 creatorAmount);
+    event FundsRefunded(uint256 indexed id, address indexed sender, uint256 amount);
 
-    constructor(address _rewardNFT){
+
+constructor(address _rewardNFT){
         owner = msg.sender;
         rewardNFT = IRewardNFT(_rewardNFT);
     }
@@ -145,6 +147,7 @@ contract FundNFT is IFundNFT, ReentrancyGuard {
         pledges[id][msg.sender] = 0;
         (bool s, ) = msg.sender.call{value: amount}("");
         require(s, TransferFailed());
+        emit FundsRefunded(id, msg.sender, amount);
     }
 
     function getCampaign(uint256 campaignId)
