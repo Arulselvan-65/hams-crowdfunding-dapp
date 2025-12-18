@@ -364,8 +364,8 @@ describe("FundNFT", function () {
         });
 
         it("Should emit FundsRefunded() when backer gets refund", async function () {
-            await fundNFT.createCampaign(ethers.parseEther("15"), startAt, endAt, "https://ipfs.io/1234/fdcndskjfnKJBJBJjnjJBKGZyf");
-            await ethers.provider.send("evm_increaseTime", [20]);
+            await fundNFT.createCampaign(ethers.parseEther("15"), startAt, endAt, "https://ipfs.io/fdcndskjfnKJBJBJjnjJBKGZyf");
+            await ethers.provider.send("evm_increaseTime", [50]);
             await ethers.provider.send("evm_mine");
             await fundNFT.connect(addr1).pledge(0, {value: ethers.parseEther("5")});
             await ethers.provider.send("evm_increaseTime", [Number(endAt) + 10]);

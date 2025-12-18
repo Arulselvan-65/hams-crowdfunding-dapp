@@ -1,57 +1,73 @@
-# Sample Hardhat 3 Beta Project (`mocha` and `ethers`)
+# FundNFT - Decentralized Crowdfunding with NFT Rewards
 
-This project showcases a Hardhat 3 Beta project using `mocha` for tests and the `ethers` library for Ethereum interactions.
+**FundNFT** is a decentralized, trustless crowdfunding platform. Creators launch time-bound campaigns, backers pledge ETH, and receive tiered supporter NFT badges as proof of support. No middlemen, no custody of funds — everything happens on-chain.
 
-To learn more about the Hardhat 3 Beta, please visit the [Getting Started guide](https://hardhat.org/docs/getting-started#getting-started-with-hardhat-3). To share your feedback, join our [Hardhat 3 Beta](https://hardhat.org/hardhat3-beta-telegram-group) Telegram group or [open an issue](https://github.com/NomicFoundation/hardhat/issues/new) in our GitHub issue tracker.
+## Key Features
 
-## Project Overview
+- **All-or-Nothing Funding** — If the goal is reached by the deadline, the creator claims the funds (minus a configurable platform fee). If not, backers can fully refund their pledges.
+- **Instant NFT Rewards** — Backers receive an ERC721 "Supporter Badge" NFT immediately upon pledging. Tiers upgrade automatically as you pledge more (old NFT burned, new one minted).
+- **Tiered Badges** (based on total pledge per backer):
+    - **Tier 0 (Bronze)**: ≥ 0.01 ETH
+    - **Tier 1 (Silver)**: ≥ 0.10 ETH
+    - **Tier 2 (Gold)**: ≥ 0.50 ETH
+- **Metadata via IPFS** — Campaign and NFT metadata (including tier-specific images) hosted on IPFS for decentralization.
+- **Secure & Protected** — ReentrancyGuard, proper checks, custom errors, and testing.
+- **Permissionless** — Anyone can create a campaign or pledge.
 
-This example project includes:
 
-- A simple Hardhat configuration file.
-- Foundry-compatible Solidity unit tests.
-- TypeScript integration tests using `mocha` and ethers.js
-- Examples demonstrating how to connect to different types of networks, including locally simulating OP mainnet.
 
-## Usage
 
-### Running Tests
 
-To run all the tests in the project, execute the following command:
 
-```shell
+
+
+## How It Works
+
+1. **Creator** deploys a campaign with goal, start/end timestamps, and IPFS URI.
+2. **Backers** pledge ETH during the active period → receive/upgrade NFT badge.
+3. After deadline:
+    - Anyone can `finalize()` the campaign.
+    - If goal reached → Creator `claim()` funds.
+    - If goal missed → Backers `refund()` their pledges.
+
+
+
+
+## Contracts
+
+- **FundNFT.sol** — Main crowdfunding logic, pledge/refund/claim handling.
+- **RewardNFT.sol** — ERC721 badge contract with burnable tiers and dynamic tokenURI (baseURI + tier + ".json").
+
+Built with:
+- Solidity ^0.8.26
+- OpenZeppelin Contracts (ReentrancyGuard, ERC721, ERC721Burnable)
+- Hardhat for testing/deployment
+
+## Testing
+
+- Campaign creation & validation
+- Pledging, tier upgrades, NFT mint/burn
+- Finalization, claiming, refunds
+- All edge cases and reverts
+
+Run tests:
+```bash
 npx hardhat test
 ```
 
-You can also selectively run the Solidity or `mocha` tests:
+## Deployment
 
-```shell
-npx hardhat test solidity
-npx hardhat test mocha
-```
+1. Compile: `npx hardhat compile`
+2. Deploy RewardNFT first
+3. Deploy FundNFT with RewardNFT address
+4. Call `setFundNFT()` on RewardNFT
 
-### Make a deployment to Sepolia
+(Full deployment scripts available in `/scripts`)
 
-This project includes an example Ignition module to deploy the contract. You can deploy this module to a locally simulated chain or to Sepolia.
+## License
 
-To run the deployment to a local chain:
+MIT
 
-```shell
-npx hardhat ignition deploy ignition/modules/Counter.ts
-```
+---
 
-To run the deployment to Sepolia, you need an account with funds to send the transaction. The provided Hardhat configuration includes a Configuration Variable called `SEPOLIA_PRIVATE_KEY`, which you can use to set the private key of the account you want to use.
-
-You can set the `SEPOLIA_PRIVATE_KEY` variable using the `hardhat-keystore` plugin or by setting it as an environment variable.
-
-To set the `SEPOLIA_PRIVATE_KEY` config variable using `hardhat-keystore`:
-
-```shell
-npx hardhat keystore set SEPOLIA_PRIVATE_KEY
-```
-
-After setting the variable, you can run the deployment with the Sepolia network:
-
-```shell
-npx hardhat ignition deploy --network sepolia ignition/modules/Counter.ts
-```
+Built with ❤️ for the Web3 community. Feedback & contributions welcome! 🚀
