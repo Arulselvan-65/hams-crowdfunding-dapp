@@ -141,6 +141,7 @@ contract FundNFT is IFundNFT, ReentrancyGuard {
         require(c.finalized, CampaignStillActive());
         require(c.pledged < c.goal, GoalReached());
 
+        c.pledged -= amount;
         pledges[id][msg.sender] = 0;
         (bool s, ) = msg.sender.call{value: amount}("");
         require(s, TransferFailed());
@@ -182,6 +183,10 @@ contract FundNFT is IFundNFT, ReentrancyGuard {
             all[i] = campaigns[i];
         }
         return all;
+    }
+
+    function getPledgeInfo(uint256 id, address  addr) external view returns(uint256) {
+        return pledges[id][addr];
     }
 
     function getTokenInfo(uint256 campaignId, address addr) external view returns(uint256 tokenId) {
