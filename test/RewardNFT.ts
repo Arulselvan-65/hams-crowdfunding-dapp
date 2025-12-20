@@ -14,7 +14,6 @@ describe("RewardNFT", function () {
         await rewardNFT.waitForDeployment();
         fundNFT = await ethers.deployContract("FundNFT", [rewardNFT.getAddress()]);
         await rewardNFT.waitForDeployment();
-        await rewardNFT.setFundNFT(fundNFT.getAddress());
 
         let blockNum = await ethers.provider.getBlockNumber();
         let latestBlock = await ethers.provider.getBlock(blockNum);
@@ -30,6 +29,26 @@ describe("RewardNFT", function () {
 
         it("Should have nextTokenId starting at 0", async function () {
             expect(await rewardNFT.nextTokenId()).to.equal(0);
+        });
+
+        it("Should have fundNFT initially set to address(0)", async function () {
+            expect(await rewardNFT.fundNFT()).to.equal(ethers.ZeroAddress);
+        });
+    });
+
+    describe("setFundNFT", function () {
+        it("Should allow setting fundNFT address when called by anyone (initially)", async function () {
+            await rewardNFT.setFundNFT(fundNFT.getAddress());
+        });
+        it("Should revert with InvalidAddress() if setting to address(0)", async function () {
+            expect(rewardNFT.setFundNFT(ethers.ZeroAddress)).to.revertedWithCustomError(rewardNFT, "InvalidAddress");
+        });
+
+        it("Should allow updating fundNFT address multiple times", async function () {
+            await rewardNFT.setFundNFT(fundNFT.getAddress());
+            fundNFT = await ethers.deployContract("FundNFT", [rewardNFT.getAddress()]);
+            await rewardNFT.waitForDeployment();
+            await rewardNFT.setFundNFT(fundNFT.getAddress());
         });
     });
 
