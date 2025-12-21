@@ -1,12 +1,13 @@
 import { expect } from "chai";
 import { network } from "hardhat";
+import {getAddress} from "ethers";
 
 const { ethers } = await network.connect();
 
 describe("RewardNFT", function () {
     let fundNFT: any, rewardNFT: any;
     let owner: any, addr1: any, addr2: any;
-    let startAt: number | any, endAt: number | any;
+    let startAt: bigint, endAt: bigint;
 
     beforeEach(async function(){
         [owner, addr1, addr2] = await ethers.getSigners();
@@ -17,8 +18,9 @@ describe("RewardNFT", function () {
 
         let blockNum = await ethers.provider.getBlockNumber();
         let latestBlock = await ethers.provider.getBlock(blockNum);
-        startAt = latestBlock?.timestamp;
-        endAt = (10 * 60 * 60 * 60) + startAt;
+        const currentTimestamp : number | any = latestBlock?.timestamp;
+        startAt = BigInt(currentTimestamp) + 20n;
+        endAt = BigInt(currentTimestamp) + BigInt(10 * 24 * 60 * 60);
     });
 
     describe("Deployment & Initialization", function () {
@@ -51,5 +53,96 @@ describe("RewardNFT", function () {
             await rewardNFT.setFundNFT(fundNFT.getAddress());
         });
     });
+
+    describe("setBaseURI", function () {
+        it("Should allow fundNFT to set base URI for a campaign", async function () {
+            await rewardNFT.setFundNFT(fundNFT.getAddress());
+            await fundNFT.createCampaign(ethers.parseEther("100"), startAt, endAt, "https://api.ipfs.jsgfh/sdhgfjfydgfddhf");
+            expect(await rewardNFT.getCampaignURI(0)).to.equal("https://api.ipfs.jsgfh/sdhgfjfydgfddhf");
+        });
+
+        it("Should revert with NotAllowed() if called by non-fundNFT", async function () {
+            await rewardNFT.setFundNFT(fundNFT.getAddress());
+            await fundNFT.createCampaign(ethers.parseEther("100"), startAt, endAt, "https://api.ipfs.jsgfh/sdhgfjfydgfddhf");
+            expect(rewardNFT.burn(0)).to.revertedWithCustomError(rewardNFT, "NotAllowed");
+        });
+    });
+
+    describe("mintTo", function () {
+        beforeEach(async function() {
+            await rewardNFT.setFundNFT(fundNFT.getAddress());
+        })
+        it("Should mint a new token with correct campaignId and tier when called by fundNFT", async function () {
+            await fundNFT.createCampaign(ethers.parseEther("50"), startAt, endAt, "https://ipfss.io");
+            await ethers.provider.send("evm_increaseTime", [20]);
+            await ethers.provider.send("evm_mine");
+            await fundNFT.connect(addr1).pledge(0, {value: ethers.parseEther("0.01")});
+            expect(await rewardNFT.getTokenInfo(0)).to.eql([0n,0n]);
+
+            await fundNFT.connect(addr1).pledge(0, {value: ethers.parseEther("0.10")});
+            expect(await rewardNFT.getTokenInfo(1)).to.eql([0n,1n]);
+        });
+
+        it("Should increment nextTokenId correctly", async function () {
+            await fundNFT.createCampaign(ethers.parseEther("10"), startAt, endAt, "https://kjdnvkjn/dkvnfdkvn");
+            await ethers.provider.send("evm_increaseTime", [30]);
+            await ethers.provider.send("evm_mine");
+            await fundNFT.pledge(0, {value : ethers.parseEther("2")});
+            expect(await rewardNFT.nextTokenId()).to.equal(1);
+        });
+
+        it("Should revert with NotAllowed() if called by non-fundNFT", async function () {
+            expect(rewardNFT.mintTo(addr2.getAddress(), 0, 0))
+                .to.revertedWithCustomError(rewardNFT, "NotAllowed");
+        });
+
+        it("Should revert with InvalidTier() if tier >= 3", async function () {
+            await rewardNFT.setFundNFT(owner.getAddress());
+            await expect(rewardNFT.mintTo(addr1.getAddress(), 0, 3))
+                .to.be.revertedWithCustomError(rewardNFT, "InvalidTier");
+        });
+
+        it("Should revert with CampaignNotConfigured() if baseURI not set for campaignId", async function () {
+            await rewardNFT.setFundNFT(owner.getAddress());
+            await expect(rewardNFT.mintTo(addr1.getAddress(), 0, 1))
+                .to.be.revertedWithCustomError(rewardNFT, "CampaignNotConfigured");
+        });
+
+        it("Should allow minting multiple tokens for different campaigns and tiers", async function () {
+            await fundNFT.createCampaign(ethers.parseEther("20"), startAt, endAt,"https://jfnv/vkfdn/vkf");
+            await fundNFT.createCampaign(ethers.parseEther("20"), startAt, endAt,"https://jfnv/37scdccdc3br34uyb/vkf");
+            await ethers.provider.send("evm_increaseTime", [20]);
+            await ethers.provider.send("evm_mine");
+            await fundNFT.pledge(0, {value: ethers.parseEther("0.01")});
+            await fundNFT.pledge(1, {value: ethers.parseEther("0.10")});
+            expect(await rewardNFT.getTokenInfo(0)).to.eql([0n, 0n]);
+            expect(await rewardNFT.getTokenInfo(1)).to.eql([1n, 1n]);
+        });
+    });
+
+    describe("tokenURI", function () {
+        it("Should return correct tokenURI combining baseURI + tier + '.json'", async function () {});
+        it("Should correctly handle tier 0, 1, 2 in URI", async function () {});
+        it("Should revert if token does not exist (via _requireOwned)", async function () {});
+    });
+
+    describe("burn", function () {
+        it("Should allow fundNFT to burn a token", async function () {});
+        it("Should revert with NotAllowed() if called by non-fundNFT", async function () {});
+        it("Should remove token from ownership after burn", async function () {});
+        it("Should allow burning after minting", async function () {});
+    });
+
+    describe("getTokenInfo", function () {
+        it("Should return correct campaignId and tier for a valid tokenId", async function () {});
+        it("Should revert if tokenId does not exist", async function () {});
+    });
+
+    describe("Edge Cases & Security", function () {
+        it("Should prevent minting if campaign baseURI is empty string", async function () {});
+        it("Should not allow non-fundNFT to call restricted functions even after fundNFT is set", async function () {});
+        it("Should maintain correct state after multiple mints and burns", async function () {});
+    });
+
 
 })

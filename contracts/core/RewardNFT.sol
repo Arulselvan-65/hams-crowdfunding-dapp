@@ -11,6 +11,7 @@
 
         uint256 public nextTokenId;
         address public fundNFT;
+        address public owner;
 
         mapping(uint256 => string) public campaignBaseURI;
         mapping(uint256 => uint256) public tokenCampaignId;
@@ -21,7 +22,14 @@
         error InvalidAddress();
         error CampaignNotConfigured();
 
-        constructor() ERC721("FundNFT Supporter Badge", "FUNDNFT") {}
+        constructor() ERC721("FundNFT Supporter Badge", "FUNDNFT") {
+            owner = msg.sender;
+        }
+
+        modifier onlyOwner {
+            if (msg.sender != owner) revert NotAllowed();
+            _;
+        }
 
         modifier onlyFundNFT {
             if (msg.sender != fundNFT) revert NotAllowed();
@@ -34,6 +42,7 @@
         }
 
         function mintTo(address to, uint256 campaignId, uint8 tier) external onlyFundNFT returns(uint256 tokenId) {
+            require(to != address(0), InvalidAddress());
             require(tier < 3, InvalidTier());
             require(bytes(campaignBaseURI[campaignId]).length > 0, CampaignNotConfigured());
 
@@ -64,5 +73,9 @@
 
         function getTokenInfo(uint256 tokenId) external view returns (uint256 campaignId, uint8 tier) {
             return (tokenCampaignId[tokenId], tokenTier[tokenId]);
+        }
+
+        function getCampaignURI(uint256 campaignId) external view returns(string memory) {
+            return campaignBaseURI[campaignId];
         }
     }
