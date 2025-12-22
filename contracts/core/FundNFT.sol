@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import { IRewardNFT } from "../interfaces/IRewardNFT.sol";
-import { IFundNFT } from "../interfaces/IFundNFT.sol";
-import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {IRewardNFT} from "../interfaces/IRewardNFT.sol";
+import {IFundNFT} from "../interfaces/IFundNFT.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 contract FundNFT is IFundNFT, ReentrancyGuard {
-
     uint256 public nextCampaignId;
     address public immutable owner;
     address public platformFeeTo;
@@ -46,34 +45,40 @@ contract FundNFT is IFundNFT, ReentrancyGuard {
     error InvalidRange();
 
     event CampaignCreated(uint256 indexed id, address creator);
-    event CampaignFinalized(uint256 indexed id,bool status);
+    event CampaignFinalized(uint256 indexed id, bool status);
     event Pledged(uint256 indexed id, address indexed sender, uint256 value, uint8 tier);
-    event FundsClaimed(uint256 indexed id, uint256 pledged,uint256 fee,uint256 creatorAmount);
+    event FundsClaimed(uint256 indexed id, uint256 pledged, uint256 fee, uint256 creatorAmount);
     event FundsRefunded(uint256 indexed id, address indexed sender, uint256 amount);
 
-
-constructor(address _rewardNFT){
+    constructor(address _rewardNFT) {
         owner = msg.sender;
         rewardNFT = IRewardNFT(_rewardNFT);
     }
 
-    function createCampaign(uint256 _goal, uint256 _startAt, uint256 _endAt, string calldata _uri) external returns(uint256 campaignId){
+    function createCampaign(
+        uint256 _goal,
+        uint256 _startAt,
+        uint256 _endAt,
+        string calldata _uri
+    ) external returns (uint256 campaignId) {
         require(_goal > 0, InvalidGoal());
         require(_startAt >= block.timestamp, InvalidStartDate());
         require(_endAt > _startAt, InvalidEndDate());
         require(bytes(_uri).length > 0, InvalidMetaDataURI());
 
         campaignId = nextCampaignId++;
+
         campaigns[campaignId] = Campaign({
             creator: msg.sender,
             goal: _goal,
+            pledged: 0,
             startAt: _startAt,
             endAt: _endAt,
-            metadataURI: _uri,
-            pledged: 0,
+            claimed: false,
             finalized: false,
-            claimed: false
+            metadataURI: _uri
         });
+
         rewardNFT.setBaseURI(campaignId, _uri);
         emit CampaignCreated(campaignId, msg.sender);
         return campaignId;
@@ -83,7 +88,7 @@ constructor(address _rewardNFT){
         require(id < nextCampaignId, CampaignNotActive());
 
         Campaign storage c = campaigns[id];
-        require((block.timestamp >= c.startAt && block.timestamp <= c.endAt), CampaignNotActive());
+        require(block.timestamp >= c.startAt && block.timestamp <= c.endAt, CampaignNotActive());
         require(!c.finalized, CampaignEnded());
         require(msg.value > 0, InvalidAmount());
 
@@ -99,8 +104,10 @@ constructor(address _rewardNFT){
 
         c.pledged += msg.value;
         pledges[id][msg.sender] = userTotal;
+
         uint256 newTokenId = rewardNFT.mintTo(msg.sender, id, newTier);
         supporterToken[id][msg.sender] = newTokenId;
+
         emit Pledged(id, msg.sender, msg.value, newTier);
     }
 
@@ -119,6 +126,7 @@ constructor(address _rewardNFT){
 
     function claim(uint256 id) external nonReentrant {
         Campaign storage c = campaigns[id];
+
         require(c.creator == msg.sender, NotCreator());
         require(c.finalized, CampaignStillActive());
         require(c.pledged >= c.goal, GoalNotReached());
@@ -128,10 +136,10 @@ constructor(address _rewardNFT){
         uint256 fee = (c.pledged * platformFeeBps) / 10_000;
         uint256 creatorAmount = c.pledged - fee;
 
-        (bool sentFee,) = platformFeeTo.call{value: fee}("");
-        (bool sentCreator,) = msg.sender.call{value: creatorAmount}("");
-        require(sentFee && sentCreator, TransferFailed());
+        (bool sentFee, ) = platformFeeTo.call{value: fee}("");
+        (bool sentCreator, ) = msg.sender.call{value: creatorAmount}("");
 
+        require(sentFee && sentCreator, TransferFailed());
         emit FundsClaimed(id, c.pledged, fee, creatorAmount);
     }
 
@@ -145,6 +153,7 @@ constructor(address _rewardNFT){
 
         c.pledged -= amount;
         pledges[id][msg.sender] = 0;
+
         (bool s, ) = msg.sender.call{value: amount}("");
         require(s, TransferFailed());
         emit FundsRefunded(id, msg.sender, amount);
@@ -163,7 +172,8 @@ constructor(address _rewardNFT){
         bool finalized,
         string memory metadataURI,
         bool goalReached
-    ) {
+    )
+    {
         Campaign memory c = campaigns[campaignId];
 
         return (
@@ -179,34 +189,34 @@ constructor(address _rewardNFT){
         );
     }
 
-    function getCampaigns(uint256 startIndex, uint256 endIndex) external view returns(Campaign[] memory) {
+    function getCampaigns(uint256 startIndex, uint256 endIndex)
+    external
+    view
+    returns (Campaign[] memory)
+    {
         require(startIndex < endIndex, InvalidRange());
         Campaign[] memory all = new Campaign[](nextCampaignId);
-        for(uint256 i = startIndex; i <= endIndex; i++) {
+        for (uint256 i = startIndex; i <= endIndex; i++) {
             all[i] = campaigns[i];
         }
         return all;
     }
 
-    function getPledgeInfo(uint256 id, address  addr) external view returns(uint256) {
+    function getPledgeInfo(uint256 id, address addr) external view returns (uint256) {
         return pledges[id][addr];
     }
-
-    function getTokenInfo(uint256 campaignId, address addr) external view returns(uint256 tokenId) {
+    function getTokenInfo(uint256 campaignId, address addr) external view returns (uint256 tokenId) {
         return supporterToken[campaignId][addr];
     }
 
-    function _getTier(uint256 amount) private pure returns(uint8 tier)  {
+    function _getTier(uint256 amount) private pure returns (uint8 tier) {
         if (amount >= 0.50 ether) {
             return 2;
-        }
-        else if (amount >= 0.10 ether) {
+        } else if (amount >= 0.10 ether) {
             return 1;
-        }
-        else if (amount >= 0.01 ether) {
+        } else if (amount >= 0.01 ether) {
             return 0;
         }
         return 255;
     }
-
 }

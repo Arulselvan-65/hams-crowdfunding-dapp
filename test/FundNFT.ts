@@ -1,71 +1,70 @@
 import { expect } from "chai";
 import { network } from "hardhat";
-
 const { ethers } = await network.connect();
 
-describe("FundNFT", function () {
+describe("FundNFT", function() {
     let fundNFT: any;
     let rewardNFT: any;
     let owner: any, addr1: any, addr2: any, addr3: any;
     let startAt: bigint, endAt: bigint;
 
-    beforeEach(async function () {
+    beforeEach(async function() {
         [owner, addr1, addr2, addr3] = await ethers.getSigners();
         rewardNFT = await ethers.deployContract("RewardNFT");
-        await rewardNFT.waitForDeployment();  
+        await rewardNFT.waitForDeployment();
         fundNFT = await ethers.deployContract("FundNFT", [rewardNFT.getAddress()]);
         await fundNFT.waitForDeployment();
         await rewardNFT.setFundNFT(fundNFT.getAddress());
 
         const blockNum = await ethers.provider.getBlockNumber();
         const block = await ethers.provider.getBlock(blockNum);
-        const currentTimestamp : number | any = block?.timestamp;
+        const currentTimestamp: number | any = block?.timestamp;
         startAt = BigInt(currentTimestamp) + 20n;
         endAt = BigInt(currentTimestamp) + BigInt(10 * 24 * 60 * 60);
     });
 
-    describe("Deployment", function () {
-        it("Should deploy the contracts", async function () {
+    describe("Deployment", function() {
+        it("Should deploy the contracts", async function() {
             expect(await fundNFT.getAddress()).not.equal(null);
             expect(await rewardNFT.getAddress()).not.equal(null);
         });
     });
 
-    describe("Campaign Creation", function () {
-        it("Should create new Campaign", async function () {
+    describe("Campaign Creation", function() {
+        it("Should create new Campaign", async function() {
             await fundNFT.createCampaign(100, startAt, endAt, "https://api.ipfs.jsgfh/sdhgfjfydgfddhf");
             expect(await fundNFT.nextCampaignId()).to.equal(1);
             expect(await fundNFT.getCampaign(0)).not.equal(null);
         });
 
-        it("Should set the campaign creator to msg.sender (the caller of createCampaign)", async function () {
+        it("Should set the campaign creator to msg.sender (the caller of createCampaign)", async function() {
             await fundNFT.createCampaign(100, startAt, endAt, "https://api.ipfs.jsgfh/sdhgfjfydgfddhf");
             expect((await fundNFT.getCampaign(0)).creator).to.equal(await owner.getAddress());
         });
 
-        it("Should revert with InvalidGoal() when goal is 0", async function () {
+        it("Should revert with InvalidGoal() when goal is 0", async function() {
             expect(fundNFT.createCampaign(ethers.parseEther("0"), startAt, endAt, "https://api.ipfs.jsgfh/sdhgfjfydgfddhf"))
                 .to.revertedWithCustomError(fundNFT, "InvalidGoal")
         });
 
-        it("Should revert with InvalidStartDate() when startAt is before block timestamp", async function () {
+        it("Should revert with InvalidStartDate() when startAt is before block timestamp", async function() {
             expect(fundNFT.createCampaign(100, startAt - 30n, endAt, "https://api.ipfs.jsgfh/sdhgfjfydgfddhf"))
                 .to.revertedWithCustomError(fundNFT, "InvalidStartDate")
         });
 
-        it("Should revert with InvalidEndDate() when endAt is not strictly after startAt", async function () {
+        it("Should revert with InvalidEndDate() when endAt is not strictly after startAt", async function() {
             expect(fundNFT.createCampaign(100, startAt, startAt, "https://api.ipfs.jsgfh/sdhgfjfydgfddhf"))
                 .to.revertedWithCustomError(fundNFT, "InvalidEndDate")
         });
 
-        it("Should emit CampaignCreated() when a campaign is created", async function () {
+        it("Should emit CampaignCreated() when a campaign is created", async function() {
             expect(fundNFT.createCampaign(100, startAt, endAt, "https://api.ipfs.jsgfh/sdhgfjfydgfddhf"))
                 .to.emit(fundNFT, "CampaignCreated").withArgs(0, owner.getAddress())
         });
     });
 
-    describe("Campaign State & Getters", function () {
-        it("Should return correct campaign details for a valid campaignId", async function () {
+    describe("Campaign State & Getters", function() {
+        it("Should return correct campaign details for a valid campaignId", async function() {
             await fundNFT.createCampaign(ethers.parseEther("100"), startAt, endAt, "https://api.ipfs.jsgfh/sdhgfjfydgfddhf");
             const res = await fundNFT.getCampaign(0);
             expect(res.goal).to.equal(ethers.parseEther("100"));
@@ -79,7 +78,7 @@ describe("FundNFT", function () {
             expect(res.goalReached).to.equal(false);
         });
 
-        it("Should correctly set goalReached to true when pledged >= goal", async function () {
+        it("Should correctly set goalReached to true when pledged >= goal", async function() {
             await fundNFT.createCampaign(ethers.parseEther("100"), startAt, endAt, "https://api.ipfs.jsgfh/sdhgfjfydgfddhf");
             await ethers.provider.send("evm_increaseTime", [30]);
             await ethers.provider.send("evm_mine");
@@ -90,7 +89,7 @@ describe("FundNFT", function () {
             expect(res.goalReached).to.equal(true);
         });
 
-        it("Should correctly set goalReached to false when pledged < goal", async function () {
+        it("Should correctly set goalReached to false when pledged < goal", async function() {
             await fundNFT.createCampaign(ethers.parseEther("100"), startAt, endAt, "https://api.ipfs.jsgfh/sdhgfjfydgfddhf");
             await ethers.provider.send("evm_increaseTime", [30]);
             await ethers.provider.send("evm_mine");
@@ -100,14 +99,14 @@ describe("FundNFT", function () {
             expect((await fundNFT.getCampaign(0)).goalReached).to.equal(false);
         });
 
-        it("Should revert with InvalidRange() when startIndex >= endIndex", async function () {
+        it("Should revert with InvalidRange() when startIndex >= endIndex", async function() {
             await fundNFT.createCampaign(ethers.parseEther("100"), startAt, endAt, "https://api.ipfs.jsgfh/sdhgfjfydgfddhf");
             await fundNFT.connect(addr1).createCampaign(ethers.parseEther("100"), startAt, endAt, "https://api.ipfs.jsgfh/sdhgfjfydgfddhf");
             await fundNFT.connect(addr2).createCampaign(ethers.parseEther("100"), startAt, endAt, "https://api.ipfs.jsgfh/sdhgfjfydgfddhf");
             expect(fundNFT.getCampaigns(10, 1)).to.revertedWithCustomError(fundNFT, "InvalidRange");
         });
 
-        it("Should return the correct campaigns in the specified range when startIndex < endIndex", async function () {
+        it("Should return the correct campaigns in the specified range when startIndex < endIndex", async function() {
             await fundNFT.createCampaign(ethers.parseEther("100"), startAt, endAt, "https://api.ipfs.jsgfh/sdhgfjfydgfddhf");
             await fundNFT.connect(addr1).createCampaign(ethers.parseEther("100"), startAt, endAt, "https://api.ipfs.jsgfh/sdhgfjfydgfddhf");
             await fundNFT.connect(addr2).createCampaign(ethers.parseEther("100"), startAt, endAt, "https://api.ipfs.jsgfh/sdhgfjfydgkfcbuid");
@@ -120,8 +119,8 @@ describe("FundNFT", function () {
         });
     });
 
-    describe("Pledging & Rewards", function () {
-        it("Should allow a user to pledge with valid amount during active campaign period", async function () {
+    describe("Pledging & Rewards", function() {
+        it("Should allow a user to pledge with valid amount during active campaign period", async function() {
             await fundNFT.createCampaign(ethers.parseEther("10"), startAt, endAt, "https://ipfs.io/jbdcusvcudbucd");
             await ethers.provider.send("evm_increaseTime", [30]);
             await ethers.provider.send("evm_mine");
@@ -131,7 +130,7 @@ describe("FundNFT", function () {
             expect((await fundNFT.getCampaign(0)).pledged).to.equal(ethers.parseEther("1"));
         });
 
-        it("Should increase campaign pledged amount by msg.value", async function () {
+        it("Should increase campaign pledged amount by msg.value", async function() {
             await fundNFT.createCampaign(ethers.parseEther("10"), startAt, endAt, "https://ipfs.io/jbdcusvcudbucd");
             await ethers.provider.send("evm_increaseTime", [30]);
             await ethers.provider.send("evm_mine");
@@ -141,7 +140,7 @@ describe("FundNFT", function () {
             expect((await fundNFT.getCampaign(0)).pledged).to.equal(ethers.parseEther("5"));
         });
 
-        it("Should revert with InvalidAmount() if msg.value is 0", async function () {
+        it("Should revert with InvalidAmount() if msg.value is 0", async function() {
             await fundNFT.createCampaign(ethers.parseEther("10"), startAt, endAt, "https://ipfs.io/1234/jbdcusvcudbucd");
             await ethers.provider.send("evm_increaseTime", [30]);
             expect(fundNFT.pledge(0, {
@@ -149,12 +148,16 @@ describe("FundNFT", function () {
             })).to.revertedWithCustomError(fundNFT, "InvalidAmount");
         });
 
-        it("Should mint a new reward NFT with correct tier based on total pledge amount", async function () {
+        it("Should mint a new reward NFT with correct tier based on total pledge amount", async function() {
             await fundNFT.createCampaign(ethers.parseEther("10"), startAt, endAt, "https://ipfs.io/jbdcusvcudbucd");
             await ethers.provider.send("evm_increaseTime", [20]);
             await ethers.provider.send("evm_mine");
-            await fundNFT.pledge(0, { value: ethers.parseEther("0.6") });
-            await fundNFT.connect(addr1).pledge(0, { value: ethers.parseEther("0.2") });
+            await fundNFT.pledge(0, {
+                value: ethers.parseEther("0.6")
+            });
+            await fundNFT.connect(addr1).pledge(0, {
+                value: ethers.parseEther("0.2")
+            });
 
             const tokenId1 = await fundNFT.getTokenInfo(0, owner.getAddress());
             const tokenId2 = await fundNFT.getTokenInfo(0, addr1.getAddress());
@@ -163,28 +166,32 @@ describe("FundNFT", function () {
             expect((await rewardNFT.getTokenInfo(tokenId2))[1]).to.equal(1n);
         });
 
-        it("Should burn old reward NFT and mint new one when user upgrades tier by pledging more", async function () {
+        it("Should burn old reward NFT and mint new one when user upgrades tier by pledging more", async function() {
             await fundNFT.createCampaign(ethers.parseEther("10"), startAt, endAt, "https://ipfs.io/jbdcusvcudbucd");
             await ethers.provider.send("evm_increaseTime", [20]);
             await ethers.provider.send("evm_mine");
 
-            await fundNFT.pledge(0, { value: ethers.parseEther("0.2") });
+            await fundNFT.pledge(0, {
+                value: ethers.parseEther("0.2")
+            });
             let tokenId = await fundNFT.getTokenInfo(0, owner.getAddress());
             expect((await rewardNFT.getTokenInfo(tokenId))[1]).to.equal(1n);
 
-            await fundNFT.pledge(0, { value: ethers.parseEther("0.6") });
+            await fundNFT.pledge(0, {
+                value: ethers.parseEther("0.6")
+            });
             tokenId = await fundNFT.getTokenInfo(0, owner.getAddress());
             expect((await rewardNFT.getTokenInfo(tokenId))[1]).to.equal(2n);
         });
 
-        it("Should revert with CampaignNotActive() if pledging before campaign startAt", async function () {
+        it("Should revert with CampaignNotActive() if pledging before campaign startAt", async function() {
             await fundNFT.createCampaign(ethers.parseEther("10"), startAt, endAt, "https://ipfs.io/1234/jbdcusvcudbucd");
             expect(fundNFT.pledge(0, {
                 value: ethers.parseEther("0.2")
             })).to.revertedWithCustomError(fundNFT, "CampaignNotActive");
         });
 
-        it("Should revert with CampaignNotActive() if pledging after campaign endAt", async function () {
+        it("Should revert with CampaignNotActive() if pledging after campaign endAt", async function() {
             await fundNFT.createCampaign(ethers.parseEther("10"), startAt, endAt, "https://ipfs.io/1234/jbdcusvcudbucd");
             await ethers.provider.send("evm_increaseTime", [Number(endAt) + 10]);
             expect(fundNFT.pledge(0, {
@@ -192,12 +199,12 @@ describe("FundNFT", function () {
             })).to.revertedWithCustomError(fundNFT, "CampaignNotActive");
         });
 
-        it("Should revert with CampaignStillActive() when trying to finalize before campaign ends", async function () {
+        it("Should revert with CampaignStillActive() when trying to finalize before campaign ends", async function() {
             await fundNFT.createCampaign(ethers.parseEther("10"), startAt, endAt, "https://ipfs.io/1234/jbdcusvcudbucd");
             expect(fundNFT.finalize(0)).to.revertedWithCustomError(fundNFT, "CampaignStillActive");
         });
 
-        it("Should revert with CampaignAlreadyFinalized() when trying to finalize the campaign that is already finalized", async function () {
+        it("Should revert with CampaignAlreadyFinalized() when trying to finalize the campaign that is already finalized", async function() {
             await fundNFT.createCampaign(ethers.parseEther("10"), startAt, endAt, "https://ipfs.io/1234/jbdcusvcudbucd");
             await ethers.provider.send("evm_increaseTime", [Number(endAt) + 30]);
             await ethers.provider.send("evm_mine");
@@ -205,7 +212,7 @@ describe("FundNFT", function () {
             expect(fundNFT.finalize(0)).to.revertedWithCustomError(fundNFT, "CampaignAlreadyFinalized");
         });
 
-        it("Should emit Pledged() when a pledge is done", async function () {
+        it("Should emit Pledged() when a pledge is done", async function() {
             await fundNFT.createCampaign(ethers.parseEther("10"), startAt, endAt, "https://ipfs.io/1234/jbdcusvcudbucd");
             await ethers.provider.send("evm_increaseTime", [30]);
             await ethers.provider.send("evm_mine");
@@ -214,7 +221,7 @@ describe("FundNFT", function () {
             })).to.emit(fundNFT, "Pledged").withArgs(0, owner.getAddress(), ethers.parseEther("0.2"), 1)
         });
 
-        it("Should emit CampaignFinalized() when a campaign is finalized", async function () {
+        it("Should emit CampaignFinalized() when a campaign is finalized", async function() {
             await fundNFT.createCampaign(ethers.parseEther("10"), startAt, endAt, "https://ipfs.io/1234/jbdcusvcudbucd");
             await ethers.provider.send("evm_increaseTime", [Number(endAt) + 30]);
             await ethers.provider.send("evm_mine");
@@ -222,12 +229,14 @@ describe("FundNFT", function () {
         });
     });
 
-    describe("Creator Claim", function () {
-        it("Should allow creator to claim funds after campaign ends and goal is reached", async function () {
+    describe("Creator Claim", function() {
+        it("Should allow creator to claim funds after campaign ends and goal is reached", async function() {
             await fundNFT.createCampaign(ethers.parseEther("10"), startAt, endAt, "https://ipfs.io/1234/jbdcusvcudbucd");
             await ethers.provider.send("evm_increaseTime", [30]);
             await ethers.provider.send("evm_mine");
-            await fundNFT.pledge(0, {value: ethers.parseEther("10")});
+            await fundNFT.pledge(0, {
+                value: ethers.parseEther("10")
+            });
             await ethers.provider.send("evm_increaseTime", [Number(endAt) + 30]);
             await ethers.provider.send("evm_mine");
             await fundNFT.finalize(0);
@@ -235,12 +244,14 @@ describe("FundNFT", function () {
             expect((await fundNFT.getCampaign(0)).claimed).to.equal(true);
         });
 
-        it("Should transfer the correct amount (after platform fee) to the creator", async function () {
+        it("Should transfer the correct amount (after platform fee) to the creator", async function() {
             await fundNFT.createCampaign(ethers.parseEther("10"), startAt, endAt, "https://ipfs.io/1234/jbdcudbucd");
             await fundNFT.setPlatformFeeInfo(owner.getAddress(), 250);
             await ethers.provider.send("evm_increaseTime", [20]);
             await ethers.provider.send("evm_mine");
-            await fundNFT.pledge(0, {value: ethers.parseEther("11")});
+            await fundNFT.pledge(0, {
+                value: ethers.parseEther("11")
+            });
             await ethers.provider.send("evm_increaseTime", [Number(endAt) + 20]);
             await ethers.provider.send("evm_mine");
             await fundNFT.finalize(0);
@@ -248,29 +259,35 @@ describe("FundNFT", function () {
             expect(fundNFT.claim(0)).to.emit(fundNFT, "FundsClaimed").withArgs(0, ethers.parseEther("11"), fee, ethers.parseEther("11") - fee);
         });
 
-        it("Should revert with GoalNotReached() if goal was not reached while claim", async function () {
+        it("Should revert with GoalNotReached() if goal was not reached while claim", async function() {
             await fundNFT.createCampaign(ethers.parseEther("10"), startAt, endAt, "https://ipfs.io/1234/jbdcudbucd");
             await ethers.provider.send("evm_increaseTime", [20]);
             await ethers.provider.send("evm_mine");
-            await fundNFT.pledge(0, {value: ethers.parseEther("7")});
+            await fundNFT.pledge(0, {
+                value: ethers.parseEther("7")
+            });
             await ethers.provider.send("evm_increaseTime", [Number(endAt) + 20]);
             await fundNFT.finalize(0);
             expect(fundNFT.claim(0)).to.revertedWithCustomError(fundNFT, "GoalNotReached");
         });
 
-        it("Should revert with NotCreator() if claim called by non-creator", async function () {
+        it("Should revert with NotCreator() if claim called by non-creator", async function() {
             await fundNFT.createCampaign(ethers.parseEther("10"), startAt, endAt, "https://ipfs.io/1234/jbdcudbucd");
             await ethers.provider.send("evm_increaseTime", [20]);
             await ethers.provider.send("evm_mine");
-            await fundNFT.pledge(0, {value: ethers.parseEther("7")});
+            await fundNFT.pledge(0, {
+                value: ethers.parseEther("7")
+            });
             expect(fundNFT.connect(addr1).claim(0)).to.revertedWithCustomError(fundNFT, "NotCreator");
         });
 
-        it("Should revert with AlreadyClaimed() if already claimed", async function () {
+        it("Should revert with AlreadyClaimed() if already claimed", async function() {
             await fundNFT.createCampaign(ethers.parseEther("10"), startAt, endAt, "https://ipfs.io/1234/fdcndskjfnKJBJBJjnjJBKGZyf");
             await ethers.provider.send("evm_increaseTime", [20]);
             await ethers.provider.send("evm_mine");
-            await fundNFT.pledge(0, {value: ethers.parseEther("11")});
+            await fundNFT.pledge(0, {
+                value: ethers.parseEther("11")
+            });
             await ethers.provider.send("evm_increaseTime", [Number(endAt) + 30]);
             await ethers.provider.send("evm_mine");
             await fundNFT.finalize(0);
@@ -278,12 +295,14 @@ describe("FundNFT", function () {
             expect(fundNFT.claim(0)).to.revertedWithCustomError(fundNFT, "AlreadyClaimed");
         });
 
-        it("Should emit FundsClaimed() when creator claims funds", async function () {
+        it("Should emit FundsClaimed() when creator claims funds", async function() {
             await fundNFT.createCampaign(ethers.parseEther("10"), startAt, endAt, "https://ipfs.io/1234/jbdcusvcudbucd");
             await fundNFT.setPlatformFeeInfo(owner.getAddress(), 250);
             await ethers.provider.send("evm_increaseTime", [60]);
             await ethers.provider.send("evm_mine");
-            await fundNFT.pledge(0, {value: ethers.parseEther("12")});
+            await fundNFT.pledge(0, {
+                value: ethers.parseEther("12")
+            });
             await ethers.provider.send("evm_increaseTime", [Number(endAt) + 30]);
             await ethers.provider.send("evm_mine");
             await fundNFT.finalize(0);
@@ -292,12 +311,14 @@ describe("FundNFT", function () {
         });
     });
 
-    describe("Refunds", function () {
-        it("Should allow any backer to refund their full pledge if campaign failed (goal not reached after endAt)", async function () {
+    describe("Refunds", function() {
+        it("Should allow any backer to refund their full pledge if campaign failed (goal not reached after endAt)", async function() {
             await fundNFT.createCampaign(ethers.parseEther("15"), startAt, endAt, "https://ipfs.io/1234/fdcndskjfnKJBJBJjnjJBKGZyf");
             await ethers.provider.send("evm_increaseTime", [20]);
             await ethers.provider.send("evm_mine");
-            await fundNFT.connect(addr1).pledge(0, {value: ethers.parseEther("11")});
+            await fundNFT.connect(addr1).pledge(0, {
+                value: ethers.parseEther("11")
+            });
             await ethers.provider.send("evm_increaseTime", [Number(endAt) + 20]);
             await ethers.provider.send("evm_mine");
             await fundNFT.finalize(0);
@@ -305,11 +326,13 @@ describe("FundNFT", function () {
             expect(await fundNFT.getPledgeInfo(0, addr1.getAddress())).to.equal(0);
         });
 
-        it("Should transfer the exact pledged amount back to the backer", async function () {
+        it("Should transfer the exact pledged amount back to the backer", async function() {
             await fundNFT.createCampaign(ethers.parseEther("15"), startAt, endAt, "https://ipfs.io/1234/fdcndskjfnKJBJBJjnjJBKGZyf");
             await ethers.provider.send("evm_increaseTime", [20]);
             await ethers.provider.send("evm_mine");
-            await fundNFT.connect(addr1).pledge(0, {value: ethers.parseEther("5")});
+            await fundNFT.connect(addr1).pledge(0, {
+                value: ethers.parseEther("5")
+            });
             await ethers.provider.send("evm_increaseTime", [Number(endAt) + 10]);
             await ethers.provider.send("evm_mine");
             await fundNFT.finalize(0);
@@ -317,31 +340,39 @@ describe("FundNFT", function () {
             expect((await fundNFT.getCampaign(0)).pledged).to.equal(0);
         });
 
-        it("Should revert with CampaignStillActive() during refund attempts before campaign ends", async function () {
+        it("Should revert with CampaignStillActive() during refund attempts before campaign ends", async function() {
             await fundNFT.createCampaign(ethers.parseEther("15"), startAt, endAt, "https://ipfs.io/kdjbd.fdcndskjfnKJBJBJjnjJBKGZyf");
             await ethers.provider.send("evm_increaseTime", [20]);
             await ethers.provider.send("evm_mine");
-            await fundNFT.connect(addr1).pledge(0, {value: ethers.parseEther("5")});
+            await fundNFT.connect(addr1).pledge(0, {
+                value: ethers.parseEther("5")
+            });
             expect(fundNFT.connect(addr1).refund(0)).to.revertedWithCustomError(fundNFT, "CampaignStillActive");
         });
 
-        it("Should revert with GoalReached() during refund attempts if campaign succeeded (goal reached)", async function () {
+        it("Should revert with GoalReached() during refund attempts if campaign succeeded (goal reached)", async function() {
             await fundNFT.createCampaign(ethers.parseEther("15"), startAt, endAt, "https://ipfs.io/1234/fdcndskjfnKJBJBJjnjJBKGZyf");
             await ethers.provider.send("evm_increaseTime", [20]);
             await ethers.provider.send("evm_mine");
-            await fundNFT.pledge(0, {value: ethers.parseEther("10")});
-            await fundNFT.connect(addr1).pledge(0, {value: ethers.parseEther("6")});
+            await fundNFT.pledge(0, {
+                value: ethers.parseEther("10")
+            });
+            await fundNFT.connect(addr1).pledge(0, {
+                value: ethers.parseEther("6")
+            });
             await ethers.provider.send("evm_increaseTime", [Number(endAt) + 40]);
             await ethers.provider.send("evm_mine");
             await fundNFT.finalize(0);
             expect(fundNFT.connect(addr1).refund(0)).to.revertedWithCustomError(fundNFT, "GoalReached");
         });
 
-        it("Should revert with NoPledge() if pledge amount is 0", async function () {
+        it("Should revert with NoPledge() if pledge amount is 0", async function() {
             await fundNFT.createCampaign(ethers.parseEther("17"), startAt, endAt, "https://ipfsndj.io/1234/fdcndskjfnKJBJBJjnjJBKGZyf");
             await ethers.provider.send("evm_increaseTime", [50]);
             await ethers.provider.send("evm_mine");
-            await fundNFT.connect(addr1).pledge(0, {value: ethers.parseEther("3")});
+            await fundNFT.connect(addr1).pledge(0, {
+                value: ethers.parseEther("3")
+            });
             await ethers.provider.send("evm_increaseTime", [Number(endAt) + 20]);
             await ethers.provider.send("evm_mine");
             await fundNFT.finalize(0);
@@ -349,12 +380,16 @@ describe("FundNFT", function () {
             expect(fundNFT.connect(addr1).refund(0)).to.revertedWithCustomError(fundNFT, "NoPledge");
         });
 
-        it("Should allow multiple backers to refund independently", async function () {
+        it("Should allow multiple backers to refund independently", async function() {
             await fundNFT.createCampaign(ethers.parseEther("20"), startAt, endAt, "https://ipfsndj.io/1234/fdcndskjfnKJBJBJjnjJBKGZyf");
             await ethers.provider.send("evm_increaseTime", [50]);
             await ethers.provider.send("evm_mine");
-            await fundNFT.connect(addr1).pledge(0, {value: ethers.parseEther("3")});
-            await fundNFT.connect(addr2).pledge(0, {value: ethers.parseEther("5")});
+            await fundNFT.connect(addr1).pledge(0, {
+                value: ethers.parseEther("3")
+            });
+            await fundNFT.connect(addr2).pledge(0, {
+                value: ethers.parseEther("5")
+            });
             await ethers.provider.send("evm_increaseTime", [Number(endAt) + 10]);
             await ethers.provider.send("evm_mine");
             await fundNFT.finalize(0);
@@ -363,11 +398,13 @@ describe("FundNFT", function () {
             expect((await fundNFT.getCampaign(0)).pledged).to.equal(0);
         });
 
-        it("Should emit FundsRefunded() when backer gets refund", async function () {
+        it("Should emit FundsRefunded() when backer gets refund", async function() {
             await fundNFT.createCampaign(ethers.parseEther("15"), startAt, endAt, "https://ipfs.io/fdcndskjfnKJBJBJjnjJBKGZyf");
             await ethers.provider.send("evm_increaseTime", [50]);
             await ethers.provider.send("evm_mine");
-            await fundNFT.connect(addr1).pledge(0, {value: ethers.parseEther("5")});
+            await fundNFT.connect(addr1).pledge(0, {
+                value: ethers.parseEther("5")
+            });
             await ethers.provider.send("evm_increaseTime", [Number(endAt) + 10]);
             await ethers.provider.send("evm_mine");
             await fundNFT.finalize(0);

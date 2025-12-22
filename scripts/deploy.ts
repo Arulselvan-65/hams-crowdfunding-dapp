@@ -16,5 +16,5 @@ const fundNFT = await ethers.deployContract("FundNFT", [rewardNFT.getAddress()])
 
 await fundNFT.waitForDeployment();
 
-console.log("FundNFT Address:",await fundNFT.getAddress());
+console.log("FundNFT Address:", await fundNFT.getAddress());
 
