@@ -193,13 +193,23 @@ describe("RewardNFT", function () {
     });
 
     describe("getTokenInfo", function () {
-        it("Should return correct campaignId and tier for a valid tokenId", async function () {});
-        it("Should revert if tokenId does not exist", async function () {});
+        it("Should return correct campaignId and tier for a valid tokenId", async function () {
+            await rewardNFT.setFundNFT(fundNFT.getAddress());
+            await fundNFT.createCampaign(ethers.parseEther("20"), startAt, endAt, "https://ipfs.io/cndsiuvcgdybud");
+            await ethers.provider.send("evm_increaseTime", [25]);
+            await ethers.provider.send("evm_mine");
+            await fundNFT.pledge(0, { value: ethers.parseEther("0.1")});
+
+            expect(await rewardNFT.getTokenInfo(1)).to.eql([0n, 1n]);
+        });
+
+        it("Should revert with InvalidTokenId() if tokenId does not exist", async function () {
+            expect(rewardNFT.getTokenInfo(1)).to.revertedWithCustomError(rewardNFT, "InvalidTokenId");
+        });
     });
 
     describe("Edge Cases & Security", function () {
         it("Should prevent minting if campaign baseURI is empty string", async function () {});
-        it("Should not allow non-fundNFT to call restricted functions even after fundNFT is set", async function () {});
         it("Should maintain correct state after multiple mints and burns", async function () {});
     });
 

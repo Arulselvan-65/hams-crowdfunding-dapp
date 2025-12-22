@@ -19,6 +19,7 @@
 
         error NotAllowed();
         error InvalidTier();
+        error InvalidTokenId();
         error InvalidAddress();
         error CampaignNotConfigured();
 
@@ -73,6 +74,7 @@
         }
 
         function getTokenInfo(uint256 tokenId) external view returns (uint256 campaignId, uint8 tier) {
+            require(tokenId < nextTokenId, InvalidTokenId());
             return (tokenCampaignId[tokenId], tokenTier[tokenId]);
         }
 
