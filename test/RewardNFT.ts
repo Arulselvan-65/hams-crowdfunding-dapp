@@ -1,6 +1,7 @@
 import { expect } from "chai";
 import { network } from "hardhat";
 import {getAddress} from "ethers";
+import {read} from "fs";
 
 const { ethers } = await network.connect();
 
@@ -29,8 +30,8 @@ describe("RewardNFT", function () {
             expect(await rewardNFT.symbol()).to.equal("FUNDNFT");
         });
 
-        it("Should have nextTokenId starting at 0", async function () {
-            expect(await rewardNFT.nextTokenId()).to.equal(0);
+        it("Should have nextTokenId starting at 1", async function () {
+            expect(await rewardNFT.nextTokenId()).to.equal(1);
         });
 
         it("Should have fundNFT initially set to address(0)", async function () {
@@ -77,10 +78,10 @@ describe("RewardNFT", function () {
             await ethers.provider.send("evm_increaseTime", [20]);
             await ethers.provider.send("evm_mine");
             await fundNFT.connect(addr1).pledge(0, {value: ethers.parseEther("0.01")});
-            expect(await rewardNFT.getTokenInfo(0)).to.eql([0n,0n]);
+            expect(await rewardNFT.getTokenInfo(1)).to.eql([0n,0n]);
 
             await fundNFT.connect(addr1).pledge(0, {value: ethers.parseEther("0.10")});
-            expect(await rewardNFT.getTokenInfo(1)).to.eql([0n,1n]);
+            expect(await rewardNFT.getTokenInfo(2)).to.eql([0n,1n]);
         });
 
         it("Should increment nextTokenId correctly", async function () {
@@ -88,7 +89,7 @@ describe("RewardNFT", function () {
             await ethers.provider.send("evm_increaseTime", [30]);
             await ethers.provider.send("evm_mine");
             await fundNFT.pledge(0, {value : ethers.parseEther("2")});
-            expect(await rewardNFT.nextTokenId()).to.equal(1);
+            expect(await rewardNFT.nextTokenId()).to.equal(2);
         });
 
         it("Should revert with NotAllowed() if called by non-fundNFT", async function () {
@@ -115,22 +116,80 @@ describe("RewardNFT", function () {
             await ethers.provider.send("evm_mine");
             await fundNFT.pledge(0, {value: ethers.parseEther("0.01")});
             await fundNFT.pledge(1, {value: ethers.parseEther("0.10")});
-            expect(await rewardNFT.getTokenInfo(0)).to.eql([0n, 0n]);
-            expect(await rewardNFT.getTokenInfo(1)).to.eql([1n, 1n]);
+            expect(await rewardNFT.getTokenInfo(1)).to.eql([0n, 0n]);
+            expect(await rewardNFT.getTokenInfo(2)).to.eql([1n, 1n]);
         });
     });
 
     describe("tokenURI", function () {
-        it("Should return correct tokenURI combining baseURI + tier + '.json'", async function () {});
-        it("Should correctly handle tier 0, 1, 2 in URI", async function () {});
-        it("Should revert if token does not exist (via _requireOwned)", async function () {});
+
+        beforeEach(async function () {
+            await rewardNFT.setFundNFT(fundNFT.getAddress());
+        });
+
+        it("Should return correct tokenURI combining baseURI + tier + '.json'", async function () {
+            await fundNFT.createCampaign(ethers.parseEther("20"), startAt, endAt,"https://jfnv/vkfdn/vkf/");
+            await ethers.provider.send("evm_increaseTime", [20]);
+            await ethers.provider.send("evm_mine");
+            await fundNFT.pledge(0, {value: ethers.parseEther("0.01")});
+            expect(await rewardNFT.tokenURI(1)).to.eql("https://jfnv/vkfdn/vkf/0.json");
+        });
+
+        it("Should correctly handle tier 0, 1, 2 in URI", async function () {
+            await fundNFT.createCampaign(ethers.parseEther("20"), startAt, endAt,"https://jfnv/vkfdn/vkf/");
+            await ethers.provider.send("evm_increaseTime", [20]);
+            await ethers.provider.send("evm_mine");
+            await fundNFT.pledge(0, {value: ethers.parseEther("0.10")});
+            expect(await rewardNFT.tokenURI(1)).to.eql("https://jfnv/vkfdn/vkf/1.json")
+        });
+
+        it("Should revert if token does not exist (via _requireOwned)", async function () {
+            await fundNFT.createCampaign(ethers.parseEther("20"), startAt, endAt,"https://jfnv/vkfdn/vkf/");
+            expect(rewardNFT.tokenURI(0)).to.revertedWithCustomError(rewardNFT, "ERC721NonexistentToken").withArgs(0);
+        });
     });
 
     describe("burn", function () {
-        it("Should allow fundNFT to burn a token", async function () {});
-        it("Should revert with NotAllowed() if called by non-fundNFT", async function () {});
-        it("Should remove token from ownership after burn", async function () {});
-        it("Should allow burning after minting", async function () {});
+
+        beforeEach(async function () {
+            await rewardNFT.setFundNFT(fundNFT.getAddress());
+        });
+
+        it("Should allow fundNFT to burn a token", async function () {
+            await rewardNFT.setFundNFT(owner.getAddress());
+            await rewardNFT.setBaseURI(0, "https://djbvjdf");
+            await rewardNFT.mintTo(owner.getAddress(), 0, 1);
+            await rewardNFT.burn(1);
+            expect(await rewardNFT.balanceOf(owner.getAddress())).to.equal(0n);
+        });
+
+        it("Should revert with NotAllowed() if called by non-fundNFT", async function () {
+            await fundNFT.createCampaign(ethers.parseEther("20"), startAt, endAt,"https://7s6f5djd/vkfdn/vkf/");
+            await ethers.provider.send("evm_increaseTime", [30]);
+            await ethers.provider.send("evm_mine");
+            await fundNFT.pledge(0, {value: ethers.parseEther("0.21")});
+
+            expect(rewardNFT.burn(1)).to.revertedWithCustomError(rewardNFT, "NotAllowed");
+        });
+
+        it("Should remove token from ownership after burn", async function () {
+            await fundNFT.createCampaign(ethers.parseEther("20"), startAt, endAt,"https://jfnv/vkfdn/vkf/");
+            await ethers.provider.send("evm_increaseTime", [20]);
+            await ethers.provider.send("evm_mine");
+            await fundNFT.pledge(0, {value: ethers.parseEther("0.01")});
+            await fundNFT.pledge(0, {value: ethers.parseEther("0.10")});
+
+            expect(await rewardNFT.balanceOf(owner.getAddress())).to.equal(1n);
+        });
+
+        it("Should allow burning after minting", async function () {
+            await rewardNFT.setFundNFT(owner.getAddress());
+            await rewardNFT.setBaseURI(0, "https://djbvjdf");
+            expect(rewardNFT.burn(1)).to.revertedWithCustomError(rewardNFT, "ERC721NonexistentToken").withArgs(1);
+            await rewardNFT.mintTo(owner.getAddress(), 0, 1);
+            await rewardNFT.burn(1);
+            expect(await rewardNFT.balanceOf(owner.getAddress())).to.equal(0n);
+        });
     });
 
     describe("getTokenInfo", function () {

@@ -24,6 +24,7 @@
 
         constructor() ERC721("FundNFT Supporter Badge", "FUNDNFT") {
             owner = msg.sender;
+            nextTokenId = 1;
         }
 
         modifier onlyOwner {
