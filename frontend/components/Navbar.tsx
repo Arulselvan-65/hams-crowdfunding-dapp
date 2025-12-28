@@ -19,7 +19,7 @@ export function Navbar() {
             <div className="mx-auto px-4 py-4 flex items-center justify-between">
                 <div>
                     <Link href="/" className="flex items-center space-x-3">
-                        <Image src="/logo.svg" alt="FundNFT" width={50} height={50} />
+                        <Image src="/logo.svg" alt="FundNFT" width={60} height={60} />
                     </Link>
                 </div>
 
