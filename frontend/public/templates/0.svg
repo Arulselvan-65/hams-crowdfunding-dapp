@@ -9,7 +9,7 @@
     <rect x="20" y="20" width="360" height="360" rx="15" stroke="url(#bronzeGrad)" stroke-width="2" fill="none" />
     <rect x="20" y="20" width="360" height="60" rx="15" fill="url(#bronzeGrad)" opacity="0.15"/>
 
-    <text x="40" y="55" fill="#CD7F32" font-family="Verdana" font-size="12" font-weight="bold" letter-spacing="1">PROJECT ID: PRJ-99</text>
+    <text x="40" y="55" fill="#CD7F32" font-family="Verdana" font-size="12" font-weight="bold" letter-spacing="1">PROJECT ID: {PROJECT_ID} </text>
 
     <text x="200" y="210" text-anchor="middle" fill="#CD7F32" font-family="Arial" font-size="28" font-weight="bold" letter-spacing="2">BRONZE</text>
     <line x1="160" y1="230" x2="240" y2="230" stroke="#CD7F32" stroke-width="1" opacity="0.5"/>

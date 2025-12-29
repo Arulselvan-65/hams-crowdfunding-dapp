@@ -1,55 +1,62 @@
 "use client"
 
-import Image from "next/image";
 import { useState } from "react";
+import { pinataUploader } from "@/utils/pinataUploader";
 
 export default function Create() {
 
-    const [file, setFile] = useState<File>();
-    const [url, setUrl] = useState("");
-    const [uploading, setUploading] = useState(false);
+    const [urls, setUrls] = useState([]);
 
     const uploadFile = async () => {
-        try {
-            if (!file) {
-                alert("No file selected");
-                return;
-            }
-
-            setUploading(true);
-            const data = new FormData();
-            data.set("file", file);
-            const uploadRequest = await fetch("/api/files", {
-                method: "POST",
-                body: data,
-            });
-            const signedUrl = await uploadRequest.json();
-            setUrl(signedUrl);
-            setUploading(false);
-        } catch (e) {
-            console.log(e);
-            setUploading(false);
-            alert("Trouble uploading file");
-        }
-    };
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setFile(e.target?.files?.[0]);
+        const res = await pinataUploader.generateAndUpload(1);
+        setUrls(res);
     };
 
     return (
         <div className="flex    h-screen bg-gray-900 font-sans justify-center items-center">
-            {/*<p className="text-xl text-cyan-300 mb-8">Crowdfund projects. Earn exclusive NFT rewards.</p>*/}
-            {/*<Button size="lg">Create a Campaign</Button>*/}
             <main className="w-full min-h-screen m-auto flex flex-col justify-center items-center">
-                <input type="file" onChange={handleChange} />
-                <button type="button" disabled={uploading} onClick={uploadFile} >
-                    {uploading ? "Uploading..." : "Upload"}
+                <button type="button"  onClick={uploadFile} >
+                  Generate
                 </button>
 
-                {url && (
-                    <><img src={url} alt="Image from Pinata"/><p>{url}</p></>)
-                }
+                {urls.length > 0 && (
+                    <div className="mt-12">
+                        <h2 className="text-2xl font-bold text-cyan-400 text-center mb-8">
+                            Your Generated Reward NFTs
+                        </h2>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                            {urls.map((url, index) => {
+                                const tierName = index === 0 ? "Bronze" : index === 1 ? "Silver" : "Gold";
+
+                                return (
+                                    <div
+                                        key={index}
+                                        className="bg-gray-800 rounded-xl p-6 shadow-2xl border border-gray-700"
+                                    >
+                                        <h3 className="text-xl font-bold text-center mb-4 text-white">
+                                            {tierName} Tier
+                                        </h3>
+
+                                        {/* Render the SVG directly from the IPFS URL */}
+                                        <div className="flex justify-center">
+                                            <img
+                                                src={url}
+                                                alt={`${tierName} Tier NFT`}
+                                                className="w-full max-w-sm rounded-lg shadow-lg"
+                                            />
+                                        </div>
+
+                                        <p className="text-sm text-gray-400 text-center mt-4 break-all">
+                                            {url}
+                                        </p>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+
             </main>
         </div>
     );
