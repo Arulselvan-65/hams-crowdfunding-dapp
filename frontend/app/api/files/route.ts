@@ -7,6 +7,7 @@ import {pinata} from "@/utils/config";
 export async function POST(request: NextRequest) {
     try {
         const data = await request.formData();
+        const projectName: string | null = data.get("projectName") as unknown as string;
         const files: File[] = [];
 
         for (const entry of data.entries()) {
@@ -25,7 +26,7 @@ export async function POST(request: NextRequest) {
 
         const upload = await pinata.upload.public
             .fileArray(files)
-            .name("folder")
+            .name(projectName)
 
         const { cid } = upload;
         const url = await pinata.gateways.public.convert(cid) + "?pinataGatewayToken=" + `${process.env.GATEWAY_KEY}`;

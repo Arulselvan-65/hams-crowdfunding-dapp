@@ -8,7 +8,7 @@ export default function Create() {
     const [url, setUrl] = useState<string | null>(null);
 
     const uploadFile = async () => {
-        const res: string = await pinataUploader.generateAndUpload(1, "test");
+        const res: string = await pinataUploader.generateAndUpload(2, "test");
         setUrl(res);
     };
 

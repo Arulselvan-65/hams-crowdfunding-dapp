@@ -16,7 +16,7 @@ export const pinataUploader = {
             for(const tier of tiers) {
                 const metadata = {
                     name: `FundNFT ${tier.name} Supporter – Campaign ${projectId}`,
-                    description: `Exclusive ${tier.name} tier reward for supporting "${projectName}" on FundNFT platform.`,
+                    description: `Exclusive ${tier.name} tier reward for supporting ${projectName} on FundNFT platform.`,
                     image: tier.url,
                     attributes: [
                         { trait_type: "Tier", value: tier.name },
@@ -33,6 +33,7 @@ export const pinataUploader = {
                 formData.append("file", metadataFile);
             }
 
+            formData.append("projectName", projectName);
             const res = await fetch("/api/files", {
                 method: "POST",
                 body: formData
@@ -65,7 +66,9 @@ const generateAndUploadImages = async (projectId: number) => {
                 method: "POST",
                 body: data,
             });
-            const signedUrl = await uploadRequest.json();
+            const cid = await uploadRequest.json();
+            const signedUrl = `ipfs.io/ipfs/${cid}`;
+
             imageUrls.push(signedUrl);
         }
     } catch (e) {
