@@ -53,7 +53,7 @@ const generateAndUploadImages = async (projectId: number) => {
     const imageUrls: string[] = [];
 
     try {
-        for (let i = 0; i < 2; i++) {
+        for (let i = 0; i < 3; i++) {
             const template = await fetch(`/templates/${i}.svg`);
             let svgText = await template.text();
             svgText = svgText.replace(/{PROJECT_ID}/g, `${projectId}`);
@@ -67,7 +67,7 @@ const generateAndUploadImages = async (projectId: number) => {
                 body: data,
             });
             const cid = await uploadRequest.json();
-            const signedUrl = `ipfs.io/ipfs/${cid}`;
+            const signedUrl = `ipfs://${cid}`;
 
             imageUrls.push(signedUrl);
         }
