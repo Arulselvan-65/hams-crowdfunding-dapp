@@ -6,15 +6,20 @@ import { pinataUploader } from "@/utils/pinataUploader";
 export default function Create() {
 
     const [url, setUrl] = useState<string | null>(null);
+    const [projectName, setProjectName] = useState<string | null>();
 
     const uploadFile = async () => {
-        const res: string = await pinataUploader.generateAndUpload(2, "test");
+        console.log(projectName)
+        const res: string = await pinataUploader.generateAndUpload(2, projectName);
         setUrl(res);
     };
 
     return (
         <div className="flex    h-screen bg-gray-900 font-sans justify-center items-center">
             <main className="w-full min-h-screen m-auto flex flex-col justify-center items-center">
+                <input type="text" onChange={(e) => setProjectName(e.target.value)} required placeholder="e.g. Open Source Drone">
+                </input>
+
                 <button type="button"  onClick={uploadFile} >
                   Generate
                 </button>
