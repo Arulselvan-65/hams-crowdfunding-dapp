@@ -7,62 +7,64 @@ export default function Create() {
 
     const [url, setUrl] = useState<string | null>(null);
     const [projectName, setProjectName] = useState<string | null>();
+    const [projectId, setProjectId] = useState<string>();
+
 
     const uploadFile = async () => {
-        console.log(projectName)
-        const res: string = await pinataUploader.generateAndUpload(2, projectName);
+        const res = projectName != null ? await pinataUploader.generateAndUpload(2, projectName) : await pinataUploader.generateAndUpload(2, projectId);
         setUrl(res);
     };
 
+    async function handleCreate(e) {
+        const form = e.target;
+
+
+    }
+
     return (
-        <div className="flex    h-screen bg-gray-900 font-sans justify-center items-center">
+        <div className="flex h-screen bg-gray-900 font-sans justify-center items-center">
             <main className="w-full min-h-screen m-auto flex flex-col justify-center items-center">
-                <input type="text" onChange={(e) => setProjectName(e.target.value)} required placeholder="e.g. Open Source Drone">
-                </input>
 
-                <button type="button"  onClick={uploadFile} >
-                  Generate
-                </button>
+                <div className="max-w-2xl mx-auto">
+                    <h2 className="text-3xl font-bold mb-2 text-gray-200">Create Campaign</h2>
+                    <p className="text-gray-400 mb-8">
+                        Launch your project in seconds.
+                    </p>
 
-                {/*{urls.length > 0 && (*/}
-                {/*    <div className="mt-12">*/}
-                {/*        <h2 className="text-2xl font-bold text-cyan-400 text-center mb-8">*/}
-                {/*            Your Generated Reward NFTs*/}
-                {/*        </h2>*/}
+                    <div className="card p-6">
+                        <form onSubmit={handleCreate}>
+                            <label className="text-gray-400">Campaign Title</label>
+                            <input type="text" name="title" required className="input" placeholder="e.g. Open Source Drone"/>
 
-                {/*        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">*/}
-                {/*            {urls.map((url, index) => {*/}
-                {/*                const tierName = index === 0 ? "Bronze" : index === 1 ? "Silver" : "Gold";*/}
+                            <label className="text-gray-400">Funding Goal (ETH)</label>
+                            <input type="text" onChange={(e) => setProjectName(e.target.value)} required placeholder="e.g. Open Source Drone"/>
 
-                {/*                return (*/}
-                {/*                    <div*/}
-                {/*                        key={index}*/}
-                {/*                        className="bg-gray-800 rounded-xl p-6 shadow-2xl border border-gray-700"*/}
-                {/*                    >*/}
-                {/*                        <h3 className="text-xl font-bold text-center mb-4 text-white">*/}
-                {/*                            {tierName} Tier*/}
-                {/*                        </h3>*/}
+                            <label className="text-gray-400">Duration (Days)</label>
+                            <input type="number" name="duration" required className="input" defaultValue={30}/>
 
-                                        {/* Render the SVG directly from the IPFS URL */}
-                                        {/*<div className="flex justify-center">*/}
-                                        {/*    <img*/}
-                                        {/*        src={url}*/}
-                                        {/*        alt={`${tierName} Tier NFT`}*/}
-                                        {/*        className="w-full max-w-sm rounded-lg shadow-lg"*/}
-                                        {/*    />*/}
-                                        {/*</div>*/}
+                            <label className="text-gray-400">Description</label>
 
-                                        <p className="text-sm text-gray-400 text-center mt-4 break-all">
-                                            {url}
-                                        </p>
-                {/*                    </div>*/}
-                {/*                );*/}
-                {/*            })}*/}
-                {/*        </div>*/}
-                {/*    </div>*/}
-                {/*)}*/}
 
+                    <textarea
+                        name="description"
+                        required
+                        className="input"
+                        style={{ height: "120px", paddingTop: "0.5rem" }}
+                        placeholder="Tell your story..."
+                    ></textarea>
+
+
+                            <label>Cover Image URL (Mock)</label>
+                            <input type="url" name="image" required className="input" placeholder="https://..."/>
+
+                            <button type="button" onClick={uploadFile}>
+                                Create Campaign
+                            </button>
+                        </form>
+                    </div>
+                </div>
             </main>
         </div>
+
     );
 }

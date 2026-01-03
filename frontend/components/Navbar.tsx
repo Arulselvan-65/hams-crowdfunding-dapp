@@ -30,7 +30,7 @@ export function Navbar() {
                                 key={link.href}
                                 href={link.href}
                                 className={cn(
-                                    "text-white font-mono",
+                                    "text-gray-200 font-mono",
                                     pathname === link.href
                                         ? "text-cyan-400"
                                         : "hover:bg-linear-to-r hover:from-cyan-400 hover:to-blue-600 hover:bg-clip-text hover:text-transparent"
