@@ -1,24 +1,27 @@
 "use client"
 
-import React, {DetailedHTMLProps, InputHTMLAttributes, useState} from "react";
+import React, { useState } from "react";
+import { Campaign } from '@/types/project';
 import { pinataUploader } from "@/utils/pinataUploader";
 
 export default function Create() {
 
-    const [url, setUrl] = useState<string | null>(null);
-    const [projectName, setProjectName] = useState<string | null>();
-    const [projectId, setProjectId] = useState<string>();
-    const [selectedImage, setSelectedImage] = useState<File | null>(null);
-
-
-    const uploadFile = async () => {
-        const res = projectName != null ? await pinataUploader.generateAndUpload(2, projectName) : await pinataUploader.generateAndUpload(2, projectId);
-        setUrl(res);
-    };
+    const [campaign, setCampaign] = useState<Campaign>({
+        projectId: null,
+        title: null,
+        fundingGoal: undefined,
+        startDate: null,
+        endDate: null,
+        description: null,
+        imgUrl: null,
+    });
 
     async function handleCreate(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
         const form = e.currentTarget;
+
+        const res = projectName != null ? await pinataUploader.generateAndUpload(2, projectName) : await pinataUploader.generateAndUpload(2, projectId);
+        setUrl(res);
 
     }
 
@@ -65,7 +68,7 @@ export default function Create() {
                                 <input
                                     type="date"
                                     required
-                                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none transition"
+                                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none transition scheme-dark"
                                 />
                             </div>
 
@@ -74,7 +77,7 @@ export default function Create() {
                                 <input
                                     type="date"
                                     required
-                                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none transition"
+                                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none transition scheme-dark"
                                 />
                             </div>
                         </div>

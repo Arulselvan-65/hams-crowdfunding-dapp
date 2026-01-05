@@ -2,12 +2,7 @@
 export const pinataUploader = {
     generateAndUpload: async (projectId: number, projectName: string) => {
         const imageUrls: string[] = await generateAndUploadImages(projectId);
-
-        const tiers = [
-            { id: "0", name: "Bronze", url: imageUrls[0] },
-            { id: "1", name: "Silver", url: imageUrls[1] },
-            { id: "2", name: "Gold", url: imageUrls[2] },
-        ];
+        const metaDatas: string[] = generateMetadatas(imageUrls);
 
         let metaDataUrl: string = "";
 
@@ -76,4 +71,29 @@ const generateAndUploadImages = async (projectId: number) => {
         alert("Trouble uploading file");
     }
     return imageUrls;
+}
+
+const generateMetadatas = (imageUrls: string[]) => {
+    const tiers = [
+        { id: "0", name: "Bronze", url: imageUrls[0] },
+        { id: "1", name: "Silver", url: imageUrls[1] },
+        { id: "2", name: "Gold", url: imageUrls[2] },
+    ];
+
+    const metaDatas: string[] = [];
+
+    for(const tier of tiers) {
+        const metadata = {
+            name: `FundNFT ${tier.name} Supporter – Campaign ${projectId}`,
+            description: `Exclusive ${tier.name} tier reward for supporting ${projectName} on FundNFT platform.`,
+            image: tier.url,
+            attributes: [
+                { trait_type: "Tier", value: tier.name },
+                { trait_type: "Campaign ID", value: Number(projectId) },
+                { trait_type: "Platform", value: "FundNFT" },
+            ],
+        };
+
+        metaDatas.push(metadata);
+    }
 }
