@@ -1,28 +1,49 @@
 "use client"
 
 import React, { useState } from "react";
-import { Campaign } from '@/types/project';
+import { Campaign } from '@/types/campaign';
 import { pinataUploader } from "@/utils/pinataUploader";
+import {pinata} from "@/utils/config";
 
 export default function Create() {
 
-    const [campaign, setCampaign] = useState<Campaign>({
-        projectId: null,
-        title: null,
-        fundingGoal: undefined,
-        startDate: null,
-        endDate: null,
-        description: null,
-        imgUrl: null,
-    });
+    const [selectedImage, setSelectedImage] = useState<File>();
 
     async function handleCreate(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
         const form = e.currentTarget;
+        const formData = new FormData(form);
 
-        const res = projectName != null ? await pinataUploader.generateAndUpload(2, projectName) : await pinataUploader.generateAndUpload(2, projectId);
-        setUrl(res);
+        const data = new FormData();
+        data.append("file", selectedImage);
+        const res = await fetch("/api/file", {
+            method: "POST",
+            body: data
+        })
+        const cid = await res.json();
+        const imageUrl = `https://ipfs.io/ipfs/${cid}`;
 
+        const title = formData.get("title") as string;
+        const goal = formData.get("goal") as string;
+        const fromDate = formData.get("fromDate") as string;
+        const toDate = formData.get("toDate") as string;
+        const description = formData.get("description") as string;
+
+        const fundingGoal = Number(goal);
+
+        const campaign = {
+            campaignId: 0,
+            title: title.trim(),
+            fundingGoal: fundingGoal,
+            startDate: new Date(fromDate).getTime() / 1000,
+            endDate: new Date(toDate).getTime() / 1000,
+            description: description.trim(),
+            imgUrl: imageUrl,
+        }
+
+        console.log(campaign);
+        const metadataURI= await pinataUploader.generateAndUpload(campaign);
+        console.log(metadataURI);
     }
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -46,6 +67,7 @@ export default function Create() {
                             <label className="block text-sm font-medium text-gray-300">Campaign Title</label>
                             <input
                                 type="text"
+                                name="title"
                                 required
                                 placeholder="e.g. Open Source Drone"
                                 className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-md text-gray-100 placeholder-gray-500 focus:outline-none transition"
@@ -56,6 +78,7 @@ export default function Create() {
                             <label className="block text-sm font-medium text-gray-300">Funding Goal (ETH)</label>
                             <input
                                 type="text"
+                                name="goal"
                                 required
                                 placeholder="e.g. 50"
                                 className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-md text-gray-100 placeholder-gray-500 focus:outline-none transition"
@@ -67,6 +90,7 @@ export default function Create() {
                                 <label className="block text-sm font-medium text-gray-300">Start Date</label>
                                 <input
                                     type="date"
+                                    name="fromDate"
                                     required
                                     className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none transition scheme-dark"
                                 />
@@ -76,6 +100,7 @@ export default function Create() {
                                 <label className="block text-sm font-medium text-gray-300">End Date</label>
                                 <input
                                     type="date"
+                                    name="toDate"
                                     required
                                     className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none transition scheme-dark"
                                 />
@@ -85,6 +110,7 @@ export default function Create() {
                         <div className="space-y-2">
                             <label className="block text-sm font-medium text-gray-300">Description</label>
                             <textarea
+                                name="description"
                                 required
                                 rows={5}
                                 placeholder="Tell about your project..."

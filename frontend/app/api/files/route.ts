@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
             .name(projectName)
 
         const { cid } = upload;
-        const url = await pinata.gateways.public.convert(cid) + "?pinataGatewayToken=" + `${process.env.GATEWAY_KEY}`;
+        const url = `https://ipfs.io/ipfs/${cid}`;
 
         return NextResponse.json(url, { status: 200 });
     } catch (e) {

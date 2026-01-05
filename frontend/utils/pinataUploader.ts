@@ -1,46 +1,44 @@
 
-export const pinataUploader = {
-    generateAndUpload: async (projectId: number, projectName: string) => {
-        const imageUrls: string[] = await generateAndUploadImages(projectId);
-        const metaDatas: string[] = generateMetadatas(imageUrls);
+import { Metadata } from "@/types/metadata";
+import {Campaign} from "@/types/campaign";
 
-        let metaDataUrl: string = "";
+export const pinataUploader = {
+    generateAndUpload: async (campaign: Campaign) => {
+        const campaignId: number = campaign.campaignId;
+        const campaignTitle: string = campaign.title;
+
+        const imageUrls: string[] = await generateAndUploadImages(campaignId);
+        const metadataList: Metadata[] = generateMetadataList(imageUrls, campaignId, campaignTitle);
 
         try {
             const formData = new FormData();
-            for(const tier of tiers) {
-                const metadata = {
-                    name: `FundNFT ${tier.name} Supporter – Campaign ${projectId}`,
-                    description: `Exclusive ${tier.name} tier reward for supporting ${projectName} on FundNFT platform.`,
-                    image: tier.url,
-                    attributes: [
-                        { trait_type: "Tier", value: tier.name },
-                        { trait_type: "Campaign ID", value: Number(projectId) },
-                        { trait_type: "Platform", value: "FundNFT" },
-                    ],
-                };
+            formData.append("campaignTitle", campaignTitle);
 
-                const metadataFile = new File(
-                    [JSON.stringify(metadata, null, 2)],
-                    `${tier.id}.json`,
+            for (let i = 0; i < 3; i++) {
+                const file = new File(
+                    [JSON.stringify(metadataList[i], null, 2)],
+                    `${i}.json`,
                     { type: "application/json" }
                 );
-                formData.append("file", metadataFile);
+                formData.append("file", file);
             }
 
-            formData.append("projectName", projectName);
+            const metaDataFile = new File(
+                [JSON.stringify(campaign, null, 2)],
+                "metadata.json",
+                { type: "application/json" }
+            );
+            formData.append("file", metaDataFile);
+
             const res = await fetch("/api/files", {
                 method: "POST",
                 body: formData
             });
-
-            metaDataUrl = await res.json();
+            return await res.json();
         } catch (e) {
             console.log(e);
             alert("Trouble uploading file");
         }
-
-        return metaDataUrl;
     }
 }
 
@@ -73,19 +71,19 @@ const generateAndUploadImages = async (projectId: number) => {
     return imageUrls;
 }
 
-const generateMetadatas = (imageUrls: string[]) => {
+const generateMetadataList = (imageUrls: string[], projectId: number, campaignTitle: string) => {
     const tiers = [
         { id: "0", name: "Bronze", url: imageUrls[0] },
         { id: "1", name: "Silver", url: imageUrls[1] },
         { id: "2", name: "Gold", url: imageUrls[2] },
     ];
 
-    const metaDatas: string[] = [];
+    const metadataList: Metadata[] = [];
 
     for(const tier of tiers) {
         const metadata = {
             name: `FundNFT ${tier.name} Supporter – Campaign ${projectId}`,
-            description: `Exclusive ${tier.name} tier reward for supporting ${projectName} on FundNFT platform.`,
+            description: `Exclusive ${tier.name} tier reward for supporting ${campaignTitle} on FundNFT platform.`,
             image: tier.url,
             attributes: [
                 { trait_type: "Tier", value: tier.name },
@@ -94,6 +92,8 @@ const generateMetadatas = (imageUrls: string[]) => {
             ],
         };
 
-        metaDatas.push(metadata);
+        metadataList.push(metadata);
     }
+
+    return metadataList;
 }
