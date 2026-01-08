@@ -30,7 +30,6 @@ export async function POST(request: NextRequest) {
 
         const { cid } = upload;
         const url = `https://ipfs.io/ipfs/${cid}`;
-
         return NextResponse.json(url, { status: 200 });
     } catch (e) {
         console.log(e);
