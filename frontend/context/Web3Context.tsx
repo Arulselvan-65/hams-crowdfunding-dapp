@@ -7,15 +7,25 @@ type Web3ContextType = {
     provider: BrowserProvider | null;
     signer: JsonRpcSigner | null;
     account: string | null;
+    isConnected: boolean;
     connectWallet: () => Promise<void>;
+    disconnectWallet: () => void;
 };
 
-const Web3Context = createContext<Web3ContextType | undefined>(undefined);
+const Web3Context = createContext<Web3ContextType>({
+    provider: null,
+    signer: null,
+    account: null,
+    isConnected: false,
+    connectWallet: async () => {},
+    disconnectWallet: () => {}
+});
 
 export function Web3Provider({ children } : { children : React.ReactNode }) {
-    const [provider, setProvider] = useState<BrowserProvider | null>();
-    const [signer, setSigner] = useState<JsonRpcSigner | null>();
-    const [account, setAccount] = useState<string | null>();
+    const [provider, setProvider] = useState<BrowserProvider | null>(null);
+    const [signer, setSigner] = useState<JsonRpcSigner | null>(null);
+    const [account, setAccount] = useState<string | null>(null);
+    const [isConnected, setIsConnected] = useState<boolean>(false);
 
     const connectWallet = async () => {
         if(!window.ethereum){
@@ -29,12 +39,28 @@ export function Web3Provider({ children } : { children : React.ReactNode }) {
 
         setProvider(provider);
         setSigner(signer);
-        setAccount(address)
+        setAccount(address);
+        setIsConnected(true);
+    }
+
+    const disconnectWallet = () => {
+        setIsConnected(false);
+        setProvider(null);
+        setSigner(null);
+        setAccount(null);
     }
 
     return (
-        <Web3Context.Provider value={{ provider, signer, account, connectWallet}}>
+        <Web3Context.Provider value={{ provider, signer, account, isConnected, connectWallet, disconnectWallet}}>
             {children}
         </Web3Context.Provider>
     )
+}
+
+export function useWeb3() {
+    const context = useContext(Web3Context);
+    if (!context) {
+        throw new Error("useWeb3 must be used inside Web3Provider");
+    }
+    return context;
 }

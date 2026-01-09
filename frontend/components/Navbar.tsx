@@ -4,9 +4,11 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { useWeb3 } from "@/context/Web3Context";
 
 export function Navbar() {
     const pathname = usePathname();
+    const { connectWallet, isConnected, account } = useWeb3();
 
     const navLinks = [
         { href: "/", label: "Home" },
@@ -41,8 +43,12 @@ export function Navbar() {
                         ))}
                     </nav>
 
-                    <div className="flex items-center">
-                        <div className="w-32 h-10 bg-gray-800 rounded-lg animate-pulse" />
+                    <div className="flex items-center w-32 h-10">
+                        <button className="h-full w-full bg-sky-600 rounded-lg flex items-center justify-center
+                                        cursor-pointer font-semibold text-md text-sky-50"
+                                onClick={connectWallet}>
+                            { isConnected && isConnected ? `${account?.slice(0,9)}....` : "Connect Wallet"}
+                        </button>
                     </div>
                 </div>
             </div>
