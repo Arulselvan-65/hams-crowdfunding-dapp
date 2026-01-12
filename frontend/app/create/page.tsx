@@ -1,13 +1,15 @@
 "use client"
 
-import React, { useState } from "react";
+import React, {createContext, useContext, useState} from "react";
 import { Campaign } from '@/types/campaign';
 import { pinataUploader } from "@/utils/pinataUploader";
 import {pinata} from "@/utils/config";
+import {useContract} from "@/context/ContractContext";
 
 export default function Create() {
 
     const [selectedImage, setSelectedImage] = useState<File>();
+    const { createCampaign } = useContract();
 
     async function handleCreate(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
@@ -15,13 +17,13 @@ export default function Create() {
         const formData = new FormData(form);
 
         const data = new FormData();
-        data.append("file", selectedImage);
-        const res = await fetch("/api/file", {
-            method: "POST",
-            body: data
-        })
-        const cid = await res.json();
-        const imageUrl = `https://ipfs.io/ipfs/${cid}`;
+        // data.append("file", selectedImage);
+        // const res = await fetch("/api/file", {
+        //     method: "POST",
+        //     body: data
+        // })
+        // const cid = await res.json();
+        // const imageUrl = `https://ipfs.io/ipfs/${cid}`;
 
         const title = formData.get("title") as string;
         const goal = formData.get("goal") as string;
@@ -31,19 +33,19 @@ export default function Create() {
 
         const fundingGoal = Number(goal);
 
-        const campaign = {
+        const campaign: Campaign = {
             campaignId: 0,
             title: title.trim(),
             fundingGoal: fundingGoal,
             startDate: new Date(fromDate).getTime() / 1000,
             endDate: new Date(toDate).getTime() / 1000,
             description: description.trim(),
-            imgUrl: imageUrl,
+            imgUrl: "imageUrl",
         }
-
-        console.log(campaign);
-        const metadataURI= await pinataUploader.generateAndUpload(campaign);
-        console.log(metadataURI);
+        // console.log()
+        // const metadataURI= await pinataUploader.generateAndUpload(campaign);
+        // console.log(metadataURI);
+        console.log(await createCampaign(campaign, "metadataURI"));
     }
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -144,7 +146,7 @@ export default function Create() {
                         <div className="pt-4">
                             <button
                                 type="submit"
-                                className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md transition duration-200 shadow-lg"
+                                className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md transition duration-200 shadow-lg cursor-pointer"
                             >
                                 Create Campaign
                             </button>

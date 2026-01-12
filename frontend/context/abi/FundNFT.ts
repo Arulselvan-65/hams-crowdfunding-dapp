@@ -1,4 +1,4 @@
-export const ABI = [
+export const FUNDNFT_ABI = [
         {
             "inputs": [
                 {
@@ -665,3 +665,5 @@ export const ABI = [
             "type": "function"
         }
     ];
+
+export const fundNFTAddress = "0xba06a91BABFd154dd843971eC7f750C19086F815";
