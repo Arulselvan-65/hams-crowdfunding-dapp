@@ -32,9 +32,6 @@ export function Web3Provider({ children } : { children : React.ReactNode }) {
             alert("Metamask not installed");
             return;
         }
-        if(isConnected) {
-            return disconnectWallet();
-        }
 
         const provider = new BrowserProvider(window.ethereum);
         const signer = await provider.getSigner();
