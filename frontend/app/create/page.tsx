@@ -42,10 +42,8 @@ export default function Create() {
             description: description.trim(),
             imgUrl: "imageUrl",
         }
-        // console.log()
-        // const metadataURI= await pinataUploader.generateAndUpload(campaign);
-        // console.log(metadataURI);
-        console.log(await createCampaign(campaign, "metadataURI"));
+        const metadataURI= await pinataUploader.generateAndUpload(campaign);
+        console.log(await createCampaign(campaign, metadataURI));
     }
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
